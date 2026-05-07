@@ -1,0 +1,2173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TReDS Low-Level Architecture · Interactive Module Inspector</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f6f5f1;
+    --bg-alt: #ecebe4;
+    --ink: #14181f;
+    --ink-soft: #4a5260;
+    --ink-mute: #7a8294;
+    --line: #d8d5cb;
+    --line-strong: #b9b4a3;
+
+    --c1: #2563eb;   --c1-bg: #eaf1ff;
+    --c2: #15803d;   --c2-bg: #e8f4ec;
+    --c3: #7c3aed;   --c3-bg: #f0e9fb;
+    --c4: #b45309;   --c4-bg: #fbf2dc;
+    --c5: #475569;   --c5-bg: #e6eaef;
+
+    --critical: #c2410c;
+    --critical-bg: #fff1e6;
+    --ok: #15803d;
+    --warn: #d97706;
+    --err: #dc2626;
+
+    --shadow-sm: 0 1px 0 rgba(20,24,31,.04), 0 1px 2px rgba(20,24,31,.04);
+    --shadow-md: 0 2px 4px rgba(20,24,31,.04), 0 8px 24px rgba(20,24,31,.06);
+    --shadow-lg: 0 8px 16px rgba(20,24,31,.08), 0 24px 48px rgba(20,24,31,.10);
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Inter Tight', system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #fff8e7 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #e9efff 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+  }
+
+  .wrap{max-width:1480px; margin:0 auto; padding:36px 32px 80px}
+
+  /* ============ Header ============ */
+  .hdr{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:32px; border-bottom:1px solid var(--line); padding-bottom:24px; margin-bottom:28px;
+  }
+  .hdr-left .eyebrow{
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px;
+  }
+  .hdr-left h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:42px;
+    line-height:1.05; letter-spacing:-0.02em; margin:0 0 8px;
+  }
+  .hdr-left h1 em{font-style:italic; font-weight:400; color:var(--ink-soft)}
+  .hdr-left .sub{font-size:14px; color:var(--ink-soft); max-width:680px}
+
+  .legend-pills{display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; max-width:480px}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 10px; background:#fff; border:1px solid var(--line); border-radius:999px;
+    font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:.04em; color:var(--ink-soft);
+  }
+  .dot{width:8px; height:8px; border-radius:50%}
+  .pill.c1 .dot{background:var(--c1)} .pill.c2 .dot{background:var(--c2)}
+  .pill.c3 .dot{background:var(--c3)} .pill.c4 .dot{background:var(--c4)}
+  .pill.c5 .dot{background:var(--c5)} .pill.cr .dot{background:var(--critical)}
+
+  /* ============ Toolbar ============ */
+  .toolbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:10px 14px; box-shadow:var(--shadow-sm); margin-bottom:24px;
+  }
+  .toolbar .label{
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-right:6px;
+  }
+  .btn{
+    appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+    padding:7px 12px; font-family:'Inter Tight', sans-serif; font-size:13px; font-weight:500;
+    color:var(--ink); cursor:pointer; transition:all .15s ease; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--ink); transform:translateY(-1px)}
+  .btn.active{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .btn.danger.active{background:var(--critical); border-color:var(--critical)}
+  .toolbar .spacer{flex:1}
+  .toolbar .hint{font-size:12px; color:var(--ink-soft); font-style:italic}
+
+  .live-indicator{
+    display:inline-flex; align-items:center; gap:6px;
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    color:var(--ok); font-weight:600; letter-spacing:.06em;
+  }
+  .live-dot{
+    width:8px; height:8px; border-radius:50%; background:var(--ok);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{opacity:1; transform:scale(1)}
+    50%{opacity:.5; transform:scale(1.3)}
+  }
+
+  /* ============ Diagram canvas ============ */
+  .canvas{
+    position:relative; background:#fff; border:1px solid var(--line);
+    border-radius:18px; padding:28px 24px 24px; box-shadow:var(--shadow-md); overflow:hidden;
+  }
+  .canvas::before{
+    content:''; position:absolute; inset:0;
+    background-image:
+      linear-gradient(rgba(20,24,31,.025) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(20,24,31,.025) 1px, transparent 1px);
+    background-size: 32px 32px; pointer-events:none; z-index:0;
+  }
+  .layers{position:relative; z-index:1}
+  .layer{
+    display:grid; grid-template-columns: 180px 1fr; gap:20px;
+    padding:18px 0; border-bottom:1px dashed var(--line); align-items:flex-start;
+  }
+  .layer:last-of-type{border-bottom:none}
+  .layer-head{position:sticky; top:0}
+  .layer-num{
+    display:inline-flex; align-items:center; justify-content:center;
+    width:28px; height:28px; border-radius:50%; color:#fff;
+    font-family:'JetBrains Mono', monospace; font-size:12px; font-weight:600; margin-bottom:8px;
+  }
+  .layer.l1 .layer-num{background:var(--c1)} .layer.l2 .layer-num{background:var(--c2)}
+  .layer.l3 .layer-num{background:var(--c3)} .layer.l4 .layer-num{background:var(--c4)}
+  .layer.l5 .layer-num{background:var(--c5)}
+
+  .layer-title{
+    font-family:'Fraunces', serif; font-size:18px; font-weight:600;
+    line-height:1.15; letter-spacing:-0.01em; margin:0 0 4px;
+  }
+  .layer-sub{
+    font-size:11px; font-family:'JetBrains Mono', monospace;
+    letter-spacing:.08em; text-transform:uppercase; color:var(--ink-soft);
+  }
+
+  .modules{display:grid; gap:12px}
+  .modules.cols-3{grid-template-columns:repeat(3,1fr)}
+  .modules.cols-4{grid-template-columns:repeat(4,1fr)}
+
+  /* Module card */
+  .mod{
+    position:relative; background:#fff; border:1.5px solid var(--line);
+    border-radius:12px; padding:14px 14px 12px; cursor:pointer;
+    transition: all .2s cubic-bezier(.2,.6,.2,1); overflow:hidden;
+  }
+  .mod:hover{border-color:var(--ink); transform:translateY(-2px); box-shadow:var(--shadow-md)}
+  .mod.l1{background:var(--c1-bg); border-color:#c4d6f9}
+  .mod.l2{background:var(--c2-bg); border-color:#c2dfca}
+  .mod.l3{background:var(--c3-bg); border-color:#d8c8f1}
+  .mod.l4{background:var(--c4-bg); border-color:#ead9a8}
+  .mod.l5{background:var(--c5-bg); border-color:#c8d0d9}
+
+  .mod-head{display:flex; align-items:center; gap:10px; margin-bottom:8px}
+  .mod-icon{
+    width:32px; height:32px; background:#fff; border-radius:8px;
+    display:inline-flex; align-items:center; justify-content:center;
+    flex-shrink:0; box-shadow:var(--shadow-sm);
+  }
+  .mod-icon svg{width:18px; height:18px}
+  .mod.l1 .mod-icon svg{stroke:var(--c1)}  .mod.l2 .mod-icon svg{stroke:var(--c2)}
+  .mod.l3 .mod-icon svg{stroke:var(--c3)}  .mod.l4 .mod-icon svg{stroke:var(--c4)}
+  .mod.l5 .mod-icon svg{stroke:var(--c5)}
+
+  .mod-title{font-family:'Inter Tight', sans-serif; font-weight:600; font-size:13.5px;
+    letter-spacing:-0.01em; line-height:1.2}
+  .mod-id{font-family:'JetBrains Mono', monospace; font-size:9.5px;
+    color:var(--ink-soft); letter-spacing:.06em}
+  .mod-desc{font-size:11.5px; color:var(--ink-soft); line-height:1.4; margin:0}
+  .mod-tech{margin-top:8px; display:flex; flex-wrap:wrap; gap:4px}
+  .tag{
+    font-family:'JetBrains Mono', monospace; font-size:9.5px;
+    background:rgba(255,255,255,.7); border:1px solid rgba(20,24,31,.08);
+    padding:2px 6px; border-radius:4px; letter-spacing:.04em; color:var(--ink);
+  }
+
+  /* Live tps badge on card */
+  .mod-tps{
+    position:absolute; top:10px; right:10px;
+    font-family:'JetBrains Mono', monospace; font-size:9.5px;
+    background:#14181f; color:#a7f3d0; padding:2px 6px; border-radius:4px;
+    letter-spacing:.05em; font-weight:600; opacity:0;
+    transition: opacity .25s;
+  }
+  body.show-load .mod-tps{opacity:1}
+
+  /* Critical path */
+  .mod[data-critical="true"]::before{
+    content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
+    background:var(--critical); opacity:0; transition:opacity .25s;
+  }
+  body.show-critical .mod[data-critical="true"]::before{opacity:1}
+  body.show-critical .mod[data-critical="true"]{
+    border-color:var(--critical); box-shadow: 0 0 0 1px var(--critical), var(--shadow-md);
+  }
+  body.show-critical .mod[data-critical="true"] .mod-title::after{
+    content:' • CRITICAL'; font-family:'JetBrains Mono', monospace; font-size:9px;
+    color:var(--critical); font-weight:600; letter-spacing:.08em;
+  }
+
+  /* Active selection */
+  .mod.active{
+    border-color:var(--ink) !important;
+    box-shadow: 0 0 0 2px var(--ink), var(--shadow-md); transform:translateY(-2px);
+  }
+  body.flow-active .mod{opacity:.32}
+  body.flow-active .mod.flow-on{opacity:1}
+  body.flow-active .mod.flow-on{border-color:var(--ink); box-shadow:var(--shadow-md)}
+
+  /* ============ INSPECTOR PANEL (the new big thing) ============ */
+  .inspector{
+    margin-top:24px; background:#fff; border:1px solid var(--line);
+    border-radius:14px; box-shadow:var(--shadow-md); min-height:200px; overflow:hidden;
+  }
+
+  .insp-empty{
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    text-align:center; color:var(--ink-soft); padding:50px 20px;
+  }
+  .insp-empty .ring{
+    width:48px; height:48px; border:1.5px dashed var(--line-strong);
+    border-radius:50%; display:inline-flex; align-items:center; justify-content:center; margin-bottom:12px;
+  }
+  .insp-empty .ring svg{width:20px; height:20px; stroke:var(--ink-soft)}
+  .insp-empty p{margin:0; font-size:13px}
+  .insp-empty p strong{color:var(--ink); font-weight:600}
+
+  .insp-head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap:20px; padding:22px 26px 18px; border-bottom:1px solid var(--line);
+    background: linear-gradient(180deg, #fafaf6 0%, #fff 100%);
+  }
+  .insp-title{
+    font-family:'Fraunces', serif; font-size:26px; font-weight:600;
+    letter-spacing:-0.02em; margin:0 0 4px;
+  }
+  .insp-meta{
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    color:var(--ink-soft); letter-spacing:.06em;
+  }
+  .insp-summary{
+    font-size:13.5px; color:var(--ink); line-height:1.55; margin:8px 0 0; max-width:760px;
+  }
+  .insp-badges{display:flex; flex-direction:column; gap:6px; align-items:flex-end}
+  .badge{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 10px; border-radius:6px; font-family:'JetBrains Mono', monospace;
+    font-size:10.5px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  }
+  .badge.critical{background:var(--critical-bg); color:var(--critical)}
+  .badge.standard{background:#f1f3f5; color:var(--ink-soft)}
+  .badge.health-ok{background:#dcfce7; color:#166534}
+  .badge.health-warn{background:#fef3c7; color:#92400e}
+
+  /* Tabs */
+  .tabs{
+    display:flex; gap:2px; padding:0 26px; border-bottom:1px solid var(--line);
+    background:#fafaf6; overflow-x:auto;
+  }
+  .tab{
+    appearance:none; border:none; background:transparent;
+    padding:14px 16px; font-family:'Inter Tight', sans-serif;
+    font-size:13px; font-weight:500; color:var(--ink-soft); cursor:pointer;
+    border-bottom:2px solid transparent; transition:all .15s;
+    white-space:nowrap; display:inline-flex; align-items:center; gap:7px;
+  }
+  .tab:hover{color:var(--ink)}
+  .tab.active{color:var(--ink); border-bottom-color:var(--ink); font-weight:600}
+  .tab-count{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    background:#fff; border:1px solid var(--line); padding:1px 6px;
+    border-radius:999px; color:var(--ink-soft); font-weight:600;
+  }
+  .tab.active .tab-count{background:var(--ink); color:#fff; border-color:var(--ink)}
+
+  /* Tab panels */
+  .tab-panels{padding:24px 26px 28px}
+  .panel{display:none}
+  .panel.active{display:block; animation: fadeIn .25s ease}
+  @keyframes fadeIn{from{opacity:0; transform:translateY(4px)} to{opacity:1; transform:translateY(0)}}
+
+  /* ===== State Machine panel ===== */
+  .sm-wrapper{
+    background:#fafaf6; border:1px solid var(--line); border-radius:10px;
+    padding:18px; overflow-x:auto;
+  }
+  .sm-svg{display:block; margin:0 auto; max-width:100%; height:auto}
+  .sm-state{
+    fill:#fff; stroke:var(--ink); stroke-width:1.5;
+    transition: all .25s ease;
+  }
+  .sm-state.active{fill:var(--ok); stroke:var(--ok)}
+  .sm-state.terminal{fill:#fce7e7; stroke:var(--err)}
+  .sm-state.start{fill:var(--ink); stroke:var(--ink)}
+  .sm-label{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    fill:var(--ink); font-weight:600; pointer-events:none;
+  }
+  .sm-state.active + .sm-label, .sm-state.start + .sm-label{fill:#fff}
+  .sm-arrow{
+    fill:none; stroke:var(--ink-mute); stroke-width:1.2;
+    marker-end:url(#smarrow); transition:all .25s;
+  }
+  .sm-arrow.active{stroke:var(--ok); stroke-width:2}
+  .sm-arrow-label{
+    font-family:'JetBrains Mono', monospace; font-size:9px;
+    fill:var(--ink-soft); font-style:italic;
+  }
+  .sm-controls{
+    display:flex; gap:10px; align-items:center; margin-top:14px;
+    padding-top:14px; border-top:1px dashed var(--line);
+  }
+  .sm-current{
+    font-family:'JetBrains Mono', monospace; font-size:12px;
+    color:var(--ink); padding:4px 10px; background:#fff;
+    border:1px solid var(--line); border-radius:6px;
+  }
+  .sm-current strong{color:var(--ok); font-weight:700}
+
+  /* ===== Database tables panel ===== */
+  .db-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:14px}
+  .db-table{
+    background:#fff; border:1px solid var(--line); border-radius:10px; overflow:hidden;
+  }
+  .db-head{
+    background:#14181f; color:#fff; padding:10px 14px;
+    display:flex; justify-content:space-between; align-items:center;
+  }
+  .db-name{
+    font-family:'JetBrains Mono', monospace; font-size:12px;
+    font-weight:600; letter-spacing:.04em;
+  }
+  .db-rows{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    color:#a7f3d0; letter-spacing:.04em;
+  }
+  .db-cols{padding:10px 14px}
+  .db-col{
+    display:grid; grid-template-columns: auto 1fr auto;
+    gap:10px; padding:5px 0; font-size:11.5px; align-items:center;
+    border-bottom:1px dashed var(--line);
+  }
+  .db-col:last-child{border-bottom:none}
+  .db-col-key{
+    font-family:'JetBrains Mono', monospace; font-size:9px;
+    padding:1px 5px; border-radius:3px; font-weight:700; letter-spacing:.05em;
+  }
+  .db-col-key.pk{background:#fef3c7; color:#92400e}
+  .db-col-key.fk{background:#dbeafe; color:#1e40af}
+  .db-col-key.idx{background:#e9d5ff; color:#6b21a8}
+  .db-col-key.none{background:transparent; color:transparent}
+  .db-col-name{
+    font-family:'JetBrains Mono', monospace; font-size:11.5px; color:var(--ink); font-weight:500;
+  }
+  .db-col-type{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    color:var(--ink-soft); letter-spacing:.04em;
+  }
+
+  /* ===== API endpoints panel ===== */
+  .api-list{display:flex; flex-direction:column; gap:8px}
+  .api-row{
+    display:grid; grid-template-columns:auto 1fr auto auto;
+    gap:14px; align-items:center; padding:12px 14px;
+    background:#fafaf6; border:1px solid var(--line); border-radius:8px;
+    font-family:'JetBrains Mono', monospace; font-size:12px;
+    transition: all .15s;
+  }
+  .api-row:hover{background:#fff; border-color:var(--ink)}
+  .api-method{
+    font-size:10px; font-weight:700; padding:4px 8px; border-radius:5px;
+    letter-spacing:.06em; min-width:54px; text-align:center;
+  }
+  .api-method.GET{background:#dcfce7; color:#166534}
+  .api-method.POST{background:#dbeafe; color:#1e40af}
+  .api-method.PUT{background:#fef3c7; color:#92400e}
+  .api-method.PATCH{background:#fed7aa; color:#9a3412}
+  .api-method.DELETE{background:#fecaca; color:#991b1b}
+  .api-path{color:var(--ink); font-weight:500}
+  .api-path .seg-var{color:var(--c3); font-style:italic}
+  .api-desc{
+    font-family:'Inter Tight', sans-serif; font-size:11px;
+    color:var(--ink-soft); font-style:italic; text-align:right; max-width:260px;
+  }
+  .api-auth{
+    font-size:9px; padding:2px 6px; border-radius:3px;
+    background:#e0e7ff; color:#3730a3; font-weight:600; letter-spacing:.05em;
+  }
+
+  /* ===== External systems panel ===== */
+  .ext-grid{display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:12px}
+  .ext-card{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:14px; display:flex; gap:12px; align-items:flex-start;
+  }
+  .ext-ico{
+    width:36px; height:36px; border-radius:8px; flex-shrink:0;
+    display:inline-flex; align-items:center; justify-content:center;
+    background:var(--c5-bg); border:1px solid #c8d0d9;
+  }
+  .ext-ico svg{width:18px; height:18px; stroke:var(--c5)}
+  .ext-body{flex:1}
+  .ext-name{
+    font-family:'Fraunces', serif; font-size:15px; font-weight:600;
+    margin:0 0 2px;
+  }
+  .ext-proto{
+    font-family:'JetBrains Mono', monospace; font-size:9.5px;
+    color:var(--ink-soft); letter-spacing:.06em; margin-bottom:6px;
+  }
+  .ext-purpose{font-size:11.5px; color:var(--ink-soft); line-height:1.4; margin:0 0 8px}
+  .ext-status{
+    display:flex; align-items:center; gap:6px;
+    font-family:'JetBrains Mono', monospace; font-size:10px; font-weight:600;
+  }
+  .status-dot{width:7px; height:7px; border-radius:50%}
+  .status-dot.ok{background:var(--ok); box-shadow:0 0 6px var(--ok)}
+  .status-dot.warn{background:var(--warn); box-shadow:0 0 6px var(--warn)}
+  .status-dot.err{background:var(--err); box-shadow:0 0 6px var(--err)}
+
+  /* ===== Live Load panel ===== */
+  .load-grid{
+    display:grid; grid-template-columns:repeat(auto-fit, minmax(220px, 1fr)); gap:14px; margin-bottom:18px;
+  }
+  .metric{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; position:relative; overflow:hidden;
+  }
+  .metric-label{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft);
+    margin-bottom:6px;
+  }
+  .metric-value{
+    font-family:'Fraunces', serif; font-size:32px; font-weight:600;
+    line-height:1; letter-spacing:-0.02em;
+  }
+  .metric-unit{
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    color:var(--ink-soft); margin-left:4px; font-weight:500;
+  }
+  .metric-trend{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    margin-top:6px; display:inline-flex; align-items:center; gap:4px;
+  }
+  .metric-trend.up{color:var(--ok)}
+  .metric-trend.down{color:var(--err)}
+
+  .gauge-wrap{margin-top:8px}
+  .gauge{
+    height:6px; background:#e5e7eb; border-radius:3px; overflow:hidden;
+    position:relative;
+  }
+  .gauge-fill{
+    height:100%; background:linear-gradient(90deg, var(--ok), var(--warn));
+    border-radius:3px; transition:width .4s ease;
+  }
+  .gauge-fill.high{background:linear-gradient(90deg, var(--warn), var(--err))}
+
+  .sparkline{
+    width:100%; height:40px; margin-top:8px; display:block;
+  }
+
+  .load-log{
+    background:#0f1419; color:#a7f3d0; border-radius:10px;
+    padding:14px 16px; font-family:'JetBrains Mono', monospace;
+    font-size:11.5px; line-height:1.55; max-height:180px; overflow-y:auto;
+    border:1px solid #1f2937;
+  }
+  .load-log-row{
+    display:grid; grid-template-columns: auto auto 1fr;
+    gap:12px; padding:2px 0;
+  }
+  .log-time{color:#6b7280}
+  .log-level{font-weight:600}
+  .log-level.INFO{color:#60a5fa}
+  .log-level.OK{color:#34d399}
+  .log-level.WARN{color:#fbbf24}
+  .log-level.ERR{color:#f87171}
+  .log-msg{color:#e5e7eb}
+
+  /* Reg anchor */
+  .insp-regs{
+    margin-top:18px; padding:12px 14px; background:#f6f5f1;
+    border-left:3px solid var(--ink); border-radius:0 6px 6px 0;
+    font-size:11.5px; color:var(--ink-soft); line-height:1.5;
+  }
+  .insp-regs strong{color:var(--ink); font-weight:600}
+
+  /* ============ Footer ============ */
+  .footer{margin-top:24px; display:grid; grid-template-columns:repeat(3,1fr); gap:14px}
+  .fnote{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:14px; font-size:12px; color:var(--ink-soft); line-height:1.5;
+  }
+  .fnote strong{
+    color:var(--ink); font-weight:600; display:block; margin-bottom:4px;
+    font-family:'Fraunces', serif; font-size:14px;
+  }
+
+  /* Responsive */
+  @media (max-width:1100px){
+    .modules.cols-4{grid-template-columns:repeat(2,1fr)}
+    .modules.cols-3{grid-template-columns:repeat(2,1fr)}
+    .layer{grid-template-columns: 140px 1fr}
+    .hdr{flex-direction:column; align-items:flex-start}
+    .legend-pills{justify-content:flex-start}
+    .footer{grid-template-columns:1fr}
+  }
+  @media (max-width:680px){
+    .modules.cols-4, .modules.cols-3{grid-template-columns:1fr}
+    .layer{grid-template-columns:1fr}
+    .layer-head{position:static}
+    .hdr-left h1{font-size:30px}
+    .wrap{padding:20px 16px 60px}
+    .insp-head{flex-direction:column}
+    .insp-badges{flex-direction:row; align-items:flex-start}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- Header -->
+  <header class="hdr">
+    <div class="hdr-left">
+      <div class="eyebrow">BlackSalt ReceivaBridge — RBI TReDS Platform</div>
+      <h1>Module <em>Inspector</em></h1>
+      <p class="sub">Click any module to drill into its state machine, database schema, REST endpoints, external dependencies, and live transaction load. All metrics simulated against realistic TReDS production load profiles.</p>
+    </div>
+    <div class="legend-pills">
+      <span class="pill c1"><span class="dot"></span>Engagement</span>
+      <span class="pill c2"><span class="dot"></span>Business Logic</span>
+      <span class="pill c3"><span class="dot"></span>Data &amp; Messaging</span>
+      <span class="pill c4"><span class="dot"></span>Surveillance</span>
+      <span class="pill c5"><span class="dot"></span>External APIs</span>
+      <span class="pill cr"><span class="dot"></span>Critical Path</span>
+    </div>
+  </header>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <span class="label">View</span>
+    <button class="btn active" data-view="all">All Layers</button>
+    <button class="btn" data-view="business">Business Modules</button>
+    <button class="btn danger" id="critToggle">Critical Path</button>
+    <button class="btn" id="loadToggle">Show Live TPS</button>
+    <button class="btn" id="resetBtn">Reset</button>
+    <span class="spacer"></span>
+    <span class="live-indicator"><span class="live-dot"></span>SIMULATION LIVE</span>
+  </div>
+
+  <!-- Diagram canvas -->
+  <div class="canvas">
+    <div class="layers">
+
+      <!-- LAYER 1 — Engagement -->
+      <section class="layer l1">
+        <div class="layer-head">
+          <span class="layer-num">1</span>
+          <h3 class="layer-title">Engagement &amp; Gateway</h3>
+          <div class="layer-sub">The Perimeter</div>
+        </div>
+        <div class="modules cols-4">
+          <div class="mod l1" data-id="waf">
+            <span class="mod-tps" data-tps-key="waf"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/></svg></div>
+              <div><div class="mod-title">WAF &amp; DDoS Shield</div><div class="mod-id">L1.A · perimeter</div></div>
+            </div>
+            <p class="mod-desc">Bot mitigation, rate-limiting, OWASP rule sets in front of every request.</p>
+            <div class="mod-tech"><span class="tag">CloudFront</span><span class="tag">CERT-In</span></div>
+          </div>
+          <div class="mod l1" data-id="apigw" data-critical="true">
+            <span class="mod-tps" data-tps-key="apigw"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-9 4 18 3-9h4"/></svg></div>
+              <div><div class="mod-title">API Gateway</div><div class="mod-id">L1.B · ingress</div></div>
+            </div>
+            <p class="mod-desc">Spring Cloud Gateway. OAuth2/OIDC, mTLS, request signing, throttling.</p>
+            <div class="mod-tech"><span class="tag">OAuth2</span><span class="tag">JWT</span><span class="tag">mTLS</span></div>
+          </div>
+          <div class="mod l1" data-id="iam" data-critical="true">
+            <span class="mod-tps" data-tps-key="iam"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a8 8 0 0 1 16 0v1"/></svg></div>
+              <div><div class="mod-title">Identity &amp; Access (IAM)</div><div class="mod-id">L1.C · zero-trust</div></div>
+            </div>
+            <p class="mod-desc">RBAC across 4 participant roles. Mandatory MFA. Session &amp; device fingerprinting.</p>
+            <div class="mod-tech"><span class="tag">Keycloak</span><span class="tag">MFA</span></div>
+          </div>
+          <div class="mod l1" data-id="participants">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20a6 6 0 0 1 12 0M14 20a4.5 4.5 0 0 1 7 0"/></svg></div>
+              <div><div class="mod-title">Participants</div><div class="mod-id">L1.D · 4 roles</div></div>
+            </div>
+            <p class="mod-desc">Sellers · Buyers · Financiers · Insurance Companies.</p>
+            <div class="mod-tech"><span class="tag">Web</span><span class="tag">Mobile</span><span class="tag">ERP H2H</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LAYER 2 — Business Logic -->
+      <section class="layer l2">
+        <div class="layer-head">
+          <span class="layer-num">2</span>
+          <h3 class="layer-title">Business Logic</h3>
+          <div class="layer-sub">Microservices · 8 Modules</div>
+        </div>
+        <div class="modules cols-4">
+          <div class="mod l2" data-id="m1-onboarding" data-critical="true">
+            <span class="mod-tps" data-tps-key="m1-onboarding"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 11V7a4 4 0 0 0-8 0v4"/><rect x="5" y="11" width="14" height="10" rx="2"/></svg></div>
+              <div><div class="mod-title">① Participant Onboarding</div><div class="mod-id">M01 · KYC / CDD</div></div>
+            </div>
+            <p class="mod-desc">Video KYC, Aadhaar/PAN/DIN/Udyam verify, AML screening, simplified MSME flow.</p>
+            <div class="mod-tech"><span class="tag">VideoKYC</span><span class="tag">Udyam</span><span class="tag">AML</span></div>
+          </div>
+          <div class="mod l2" data-id="m2-invoice" data-critical="true">
+            <span class="mod-tps" data-tps-key="m2-invoice"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h4"/></svg></div>
+              <div><div class="mod-title">② Invoice / FU Upload</div><div class="mod-id">M02 · OCR · GSTN</div></div>
+            </div>
+            <p class="mod-desc">OCR/AI extraction → GSTN cross-verify → MonetaGo de-dup → CERSAI pre-check → FU created.</p>
+            <div class="mod-tech"><span class="tag">Textract</span><span class="tag">GSTN</span><span class="tag">CERSAI</span></div>
+          </div>
+          <div class="mod l2" data-id="m3-auction" data-critical="true">
+            <span class="mod-tps" data-tps-key="m3-auction"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-3 3-6-6 3-3zM10 10l-7 7v3h3l7-7"/></svg></div>
+              <div><div class="mod-title">③ Auction &amp; Bidding</div><div class="mod-id">M03 · matching</div></div>
+            </div>
+            <p class="mod-desc">Multi-financier real-time bidding. WebSockets. Anonymised bid display.</p>
+            <div class="mod-tech"><span class="tag">WebSocket</span><span class="tag">Redis</span></div>
+          </div>
+          <div class="mod l2" data-id="m4-settlement" data-critical="true">
+            <span class="mod-tps" data-tps-key="m4-settlement"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M3 12h18M3 17h12"/><circle cx="19" cy="17" r="2"/></svg></div>
+              <div><div class="mod-title">④ Settlement Module</div><div class="mod-id">M04 · NACH T+2</div></div>
+            </div>
+            <p class="mod-desc">T+2 disbursement to seller; due-date debit from buyer; insurance &amp; non-financed FU NACH.</p>
+            <div class="mod-tech"><span class="tag">NACH</span><span class="tag">NPCI</span><span class="tag">T+2</span></div>
+          </div>
+          <div class="mod l2" data-id="m5-cersai" data-critical="true">
+            <span class="mod-tps" data-tps-key="m5-cersai"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div>
+              <div><div class="mod-title">⑤ CERSAI Filing</div><div class="mod-id">M05 · auto-register</div></div>
+            </div>
+            <p class="mod-desc">Automatic CERSAI filing on every assignment. Retry queue, exception alerts, audit trail.</p>
+            <div class="mod-tech"><span class="tag">CERSAI API</span><span class="tag">Retry</span></div>
+          </div>
+          <div class="mod l2" data-id="m6-surveillance">
+            <span class="mod-tps" data-tps-key="m6-surveillance"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg></div>
+              <div><div class="mod-title">⑥ Surveillance &amp; MIS</div><div class="mod-id">M06 · 24×7</div></div>
+            </div>
+            <p class="mod-desc">Real-time stream processing. Anomaly &amp; collusion detection. RBI-mandated dashboards.</p>
+            <div class="mod-tech"><span class="tag">Flink</span><span class="tag">ML</span></div>
+          </div>
+          <div class="mod l2" data-id="m8-ext" data-critical="true">
+            <span class="mod-tps" data-tps-key="m8-ext"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+              <div><div class="mod-title">⑧ External Integration Hub</div><div class="mod-id">M08 · API mesh</div></div>
+            </div>
+            <p class="mod-desc">Outbound adapters: NACH/NPCI · GSTN · CERSAI · MonetaGo · GeM · NCGTC · AA · ERP.</p>
+            <div class="mod-tech"><span class="tag">REST</span><span class="tag">SFTP</span><span class="tag">H2H</span></div>
+          </div>
+          <div class="mod l2" data-id="m-grievance">
+            <span class="mod-tps" data-tps-key="m-grievance"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10z"/></svg></div>
+              <div><div class="mod-title">Grievance &amp; Default</div><div class="mod-id">M07 · 3-tier</div></div>
+            </div>
+            <p class="mod-desc">3-tier ticketing, banker default reporting, RBI-Sachet escalation, quarterly disputes.</p>
+            <div class="mod-tech"><span class="tag">SLA</span><span class="tag">Reg.6(2)e</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LAYER 3 — Data Core (M07) -->
+      <section class="layer l3">
+        <div class="layer-head">
+          <span class="layer-num">3</span>
+          <h3 class="layer-title">Data &amp; Messaging</h3>
+          <div class="layer-sub">The Core · Module ⑦</div>
+        </div>
+        <div class="modules cols-4">
+          <div class="mod l3" data-id="kafka">
+            <span class="mod-tps" data-tps-key="kafka"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="12" r="2.5"/><path d="M8 7l8 4M8 17l8-4"/></svg></div>
+              <div><div class="mod-title">Event Bus</div><div class="mod-id">L3.A · Kafka</div></div>
+            </div>
+            <p class="mod-desc">Event-driven choreography. Topics: invoice.uploaded, bid.accepted, settlement.done.</p>
+            <div class="mod-tech"><span class="tag">Kafka</span><span class="tag">Avro</span></div>
+          </div>
+          <div class="mod l3" data-id="m7-db" data-critical="true">
+            <span class="mod-tps" data-tps-key="m7-db"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></div>
+              <div><div class="mod-title">⑦ Primary Database</div><div class="mod-id">M07 · PG / Oracle</div></div>
+            </div>
+            <p class="mod-desc">AES-256 at-rest. Horizontal partitioning by date/org. Synchronous replication to DR.</p>
+            <div class="mod-tech"><span class="tag">PostgreSQL</span><span class="tag">Oracle</span><span class="tag">AES-256</span></div>
+          </div>
+          <div class="mod l3" data-id="redis">
+            <span class="mod-tps" data-tps-key="redis"></span>
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="4" rx="1"/><rect x="3" y="14" width="18" height="4" rx="1"/></svg></div>
+              <div><div class="mod-title">Distributed Cache</div><div class="mod-id">L3.C · Redis</div></div>
+            </div>
+            <p class="mod-desc">Active auction state, session tokens, rate-limit counters. Sub-ms reads.</p>
+            <div class="mod-tech"><span class="tag">Redis</span><span class="tag">Cluster</span></div>
+          </div>
+          <div class="mod l3" data-id="monetago">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+              <div><div class="mod-title">Blockchain Node</div><div class="mod-id">L3.D · MonetaGo</div></div>
+            </div>
+            <p class="mod-desc">Hyperledger Fabric inter-TReDS de-duplication. Hash check before bidding queue.</p>
+            <div class="mod-tech"><span class="tag">Fabric</span><span class="tag">SHA-256</span></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- LAYER 4 — External APIs -->
+      <section class="layer l5">
+        <div class="layer-head">
+          <span class="layer-num">4</span>
+          <h3 class="layer-title">External APIs</h3>
+          <div class="layer-sub">Module ⑧ · Regulator + Ecosystem</div>
+        </div>
+        <div class="modules cols-4">
+          <div class="mod l5" data-id="ext-nach" data-critical="true">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h12M11 6l4 6-4 6M21 6v12"/></svg></div>
+              <div><div class="mod-title">NACH / NPCI</div><div class="mod-id">EXT.A · settlement</div></div>
+            </div>
+            <p class="mod-desc">Sponsor-bank channel. T+2 credit, due-date debit, insurance &amp; non-financed FU rails.</p>
+          </div>
+          <div class="mod l5" data-id="ext-gstn" data-critical="true">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v6H4zM4 14h16v6H4zM8 7h.01M8 17h.01"/></svg></div>
+              <div><div class="mod-title">GSTN / e-Invoice</div><div class="mod-id">EXT.B · genuineness</div></div>
+            </div>
+            <p class="mod-desc">Real-time invoice authenticity check. Mandatory under Draft Directions 2026.</p>
+          </div>
+          <div class="mod l5" data-id="ext-cersai" data-critical="true">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg></div>
+              <div><div class="mod-title">CERSAI</div><div class="mod-id">EXT.C · registry</div></div>
+            </div>
+            <p class="mod-desc">Statutory assignment registration for every financed FU.</p>
+          </div>
+          <div class="mod l5" data-id="ext-monetago" data-critical="true">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8 6h8M6 8v8M18 8v8M8 18h8"/></svg></div>
+              <div><div class="mod-title">MonetaGo Network</div><div class="mod-id">EXT.D · cross-platform</div></div>
+            </div>
+            <p class="mod-desc">Inter-TReDS hash de-duplication. Industry standard.</p>
+          </div>
+          <div class="mod l5" data-id="ext-gem">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18l-2 13H5L3 7zM8 7V5a4 4 0 0 1 8 0v2"/></svg></div>
+              <div><div class="mod-title">GeM Portal</div><div class="mod-id">EXT.E · CPSE</div></div>
+            </div>
+            <p class="mod-desc">Govt e-Marketplace integration for CPSE buyer flows.</p>
+          </div>
+          <div class="mod l5" data-id="ext-ncgtc">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/><path d="M9 11l2 2 4-4"/></svg></div>
+              <div><div class="mod-title">NCGTC / CGTMSE</div><div class="mod-id">EXT.F · guarantee</div></div>
+            </div>
+            <p class="mod-desc">Real-time guarantee eligibility check at bid stage.</p>
+          </div>
+          <div class="mod l5" data-id="ext-aa">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s-8-4-8-12V5l8-3 8 3v5c0 8-8 12-8 12z"/></svg></div>
+              <div><div class="mod-title">Account Aggregator</div><div class="mod-id">EXT.G · credit data</div></div>
+            </div>
+            <p class="mod-desc">Consent-based MSME financial data for AI credit scoring.</p>
+          </div>
+          <div class="mod l5" data-id="ext-erp">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg></div>
+              <div><div class="mod-title">ERP Connectors</div><div class="mod-id">EXT.H · SAP/Oracle/Tally</div></div>
+            </div>
+            <p class="mod-desc">API · H2H · SFTP. Bulk invoice ingestion from buyer ERPs.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- LAYER 5 — Resilience -->
+      <section class="layer l4">
+        <div class="layer-head">
+          <span class="layer-num">5</span>
+          <h3 class="layer-title">Resilience &amp; Compliance</h3>
+          <div class="layer-sub">RBI 2018 / 2026 Mandates</div>
+        </div>
+        <div class="modules cols-3">
+          <div class="mod l4" data-id="bcp" data-critical="true">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18"/></svg></div>
+              <div><div class="mod-title">BCP &amp; DR Site</div><div class="mod-id">RES.A · RPO&lt;1h RTO&lt;4h</div></div>
+            </div>
+            <p class="mod-desc">Geographically separate DR with synchronous replication. Annual failover drill.</p>
+          </div>
+          <div class="mod l4" data-id="reporting">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></div>
+              <div><div class="mod-title">RBI Reporting</div><div class="mod-id">RES.B · Reg.6 &amp; 7</div></div>
+            </div>
+            <p class="mod-desc">Auto-generated monthly · quarterly · annual returns to RBI DPSS.</p>
+          </div>
+          <div class="mod l4" data-id="observability">
+            <div class="mod-head">
+              <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg></div>
+              <div><div class="mod-title">Observability</div><div class="mod-id">RES.C · SOC 24×7</div></div>
+            </div>
+            <p class="mod-desc">Prometheus / Grafana / SIEM. CERT-In empanelled MSSP. Annual IS audit.</p>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+
+  <!-- ============ INSPECTOR ============ -->
+  <div class="inspector" id="inspector">
+    <div class="insp-empty" id="inspEmpty">
+      <div class="ring">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16 16l5 5"/></svg>
+      </div>
+      <p><strong>Click any module above</strong> to inspect state machine, database tables, API endpoints, external connections, and live transaction load.</p>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <div class="fnote">
+      <strong>Live load simulation</strong>
+      Numbers update every second using realistic TReDS load patterns: MSME upload bursts during business hours, NACH batch settlement spikes at T+2 cutoff, and steady CERSAI background traffic.
+    </div>
+    <div class="fnote">
+      <strong>State machines</strong>
+      Each module's lifecycle reflects the actual TReDS transaction states from G18 Annex (g)–(p). Active state pulses; transitions show triggering events.
+    </div>
+    <div class="fnote">
+      <strong>Schemas &amp; APIs</strong>
+      Database tables and REST endpoints derived from the FU lifecycle, KYC requirements, and PSS Reg.6 reporting obligations. All endpoints require OAuth2 + mTLS.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  // ============================================================
+  // MODULE DATA — state machines, tables, APIs, externals
+  // ============================================================
+  const MODS = {
+    'm1-onboarding': {
+      title: '① Participant Onboarding',
+      meta: 'Module M01 · Layer 2 · Business Logic',
+      critical: true,
+      summary: 'Fully digital 4-role onboarding with KYC/CDD, Video KYC, and the simplified MSME flow per RBI Developmental Policy April 2026.',
+      regs: 'TReDS Guidelines 2018 §13–14 · RBI Master Direction KYC 2016 · RBI Apr 2026 §5',
+      baseTPS: 8, peakTPS: 45,
+      stateMachine: {
+        states: [
+          {id:'init', label:'INITIATED', x:60, y:60, type:'start'},
+          {id:'kyc', label:'KYC_PENDING', x:240, y:60},
+          {id:'video', label:'VIDEO_KYC', x:420, y:60},
+          {id:'aml', label:'AML_SCREEN', x:600, y:60},
+          {id:'agree', label:'AGREEMENT', x:600, y:180},
+          {id:'active', label:'ACTIVE', x:420, y:180, type:'active'},
+          {id:'rejected', label:'REJECTED', x:240, y:180, type:'terminal'},
+          {id:'suspend', label:'SUSPENDED', x:60, y:180, type:'terminal'}
+        ],
+        edges: [
+          {from:'init', to:'kyc', label:'submit'},
+          {from:'kyc', to:'video', label:'pass docs'},
+          {from:'kyc', to:'rejected', label:'fail'},
+          {from:'video', to:'aml', label:'pass'},
+          {from:'video', to:'rejected', label:'fail'},
+          {from:'aml', to:'agree', label:'clean'},
+          {from:'aml', to:'rejected', label:'flagged'},
+          {from:'agree', to:'active', label:'e-sign'},
+          {from:'active', to:'suspend', label:'breach'}
+        ],
+        currentState: 'active'
+      },
+      tables: [
+        {name:'participants', rows:'52,847', cols:[
+          {key:'pk', name:'participant_id', type:'UUID'},
+          {key:'idx', name:'role', type:'ENUM(seller,buyer,fin,ins)'},
+          {key:'idx', name:'udyam_id', type:'VARCHAR(19)'},
+          {key:'none', name:'pan', type:'VARCHAR(10)'},
+          {key:'none', name:'gstin', type:'VARCHAR(15)'},
+          {key:'none', name:'state', type:'ENUM'},
+          {key:'none', name:'created_at', type:'TIMESTAMPTZ'}
+        ]},
+        {name:'kyc_documents', rows:'186,302', cols:[
+          {key:'pk', name:'doc_id', type:'UUID'},
+          {key:'fk', name:'participant_id', type:'UUID'},
+          {key:'none', name:'doc_type', type:'ENUM'},
+          {key:'none', name:'doc_hash', type:'CHAR(64)'},
+          {key:'none', name:'verified_by', type:'VARCHAR(50)'},
+          {key:'none', name:'verified_at', type:'TIMESTAMPTZ'}
+        ]},
+        {name:'video_kyc_sessions', rows:'48,221', cols:[
+          {key:'pk', name:'session_id', type:'UUID'},
+          {key:'fk', name:'participant_id', type:'UUID'},
+          {key:'none', name:'liveness_score', type:'DECIMAL(4,3)'},
+          {key:'none', name:'video_uri', type:'TEXT'},
+          {key:'none', name:'completed_at', type:'TIMESTAMPTZ'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/onboarding/initiate', desc:'Start new participant journey', auth:'PUBLIC'},
+        {method:'POST', path:'/v1/onboarding/{participant_id}/kyc', desc:'Submit KYC documents'},
+        {method:'POST', path:'/v1/onboarding/{participant_id}/video-kyc', desc:'Initiate video KYC session'},
+        {method:'POST', path:'/v1/onboarding/{participant_id}/aml-check', desc:'Trigger AML screening'},
+        {method:'POST', path:'/v1/onboarding/{participant_id}/agreement', desc:'Master Agreement e-sign'},
+        {method:'GET',  path:'/v1/onboarding/{participant_id}/status', desc:'Get current state'},
+        {method:'PATCH',path:'/v1/onboarding/{participant_id}/suspend', desc:'Suspend participant', auth:'ADMIN'}
+      ],
+      externals: [
+        {name:'Udyam Portal', proto:'REST · OAuth2', purpose:'MSME registration verification', status:'ok'},
+        {name:'PAN/NSDL', proto:'REST · API key', purpose:'PAN card validation', status:'ok'},
+        {name:'CKYC Registry', proto:'SOAP · mTLS', purpose:'Central KYC lookup', status:'ok'},
+        {name:'AML Provider', proto:'REST · OAuth2', purpose:'Sanctions/PEP screening', status:'ok'},
+        {name:'Video KYC SaaS', proto:'WebRTC + REST', purpose:'Liveness + face match', status:'warn'}
+      ]
+    },
+
+    'm2-invoice': {
+      title: '② Invoice / FU Upload',
+      meta: 'Module M02 · Layer 2 · Business Logic',
+      critical: true,
+      summary: 'Heart of the platform. Ingests invoices, validates against GSTN, prevents duplicates via MonetaGo, and creates the legally enforceable Factoring Unit.',
+      regs: 'G18 §10, §12, Annex (g)–(h) · Draft RBI TReDS Directions 2026 §15',
+      baseTPS: 25, peakTPS: 180,
+      stateMachine: {
+        states: [
+          {id:'upload', label:'UPLOADED', x:60, y:60, type:'start'},
+          {id:'ocr', label:'OCR', x:220, y:60},
+          {id:'gstn', label:'GSTN_VERIFY', x:380, y:60},
+          {id:'dedup', label:'DEDUP_CHECK', x:540, y:60},
+          {id:'fu', label:'FU_CREATED', x:540, y:180},
+          {id:'pending', label:'BUYER_REVIEW', x:380, y:180},
+          {id:'accepted', label:'ACCEPTED', x:220, y:180, type:'active'},
+          {id:'rejected', label:'REJECTED', x:60, y:180, type:'terminal'}
+        ],
+        edges: [
+          {from:'upload', to:'ocr', label:'extract'},
+          {from:'ocr', to:'gstn', label:'fields'},
+          {from:'ocr', to:'rejected', label:'unparseable'},
+          {from:'gstn', to:'dedup', label:'genuine'},
+          {from:'gstn', to:'rejected', label:'fake'},
+          {from:'dedup', to:'fu', label:'unique'},
+          {from:'dedup', to:'rejected', label:'duplicate'},
+          {from:'fu', to:'pending', label:'notify'},
+          {from:'pending', to:'accepted', label:'buyer ack'},
+          {from:'pending', to:'rejected', label:'expired'}
+        ],
+        currentState: 'accepted'
+      },
+      tables: [
+        {name:'factoring_units', rows:'1,247,389', cols:[
+          {key:'pk', name:'fu_id', type:'UUID'},
+          {key:'fk', name:'seller_id', type:'UUID'},
+          {key:'fk', name:'buyer_id', type:'UUID'},
+          {key:'idx', name:'invoice_no', type:'VARCHAR(64)'},
+          {key:'none', name:'amount', type:'NUMERIC(18,2)'},
+          {key:'none', name:'tenor_days', type:'SMALLINT'},
+          {key:'none', name:'due_date', type:'DATE'},
+          {key:'idx', name:'state', type:'ENUM'},
+          {key:'none', name:'fingerprint_hash', type:'CHAR(64)'}
+        ]},
+        {name:'invoice_uploads', rows:'1,389,452', cols:[
+          {key:'pk', name:'upload_id', type:'UUID'},
+          {key:'fk', name:'fu_id', type:'UUID'},
+          {key:'none', name:'pdf_uri', type:'TEXT'},
+          {key:'none', name:'ocr_confidence', type:'DECIMAL(4,3)'},
+          {key:'none', name:'ocr_payload', type:'JSONB'}
+        ]},
+        {name:'gstn_verifications', rows:'1,247,389', cols:[
+          {key:'pk', name:'verify_id', type:'UUID'},
+          {key:'fk', name:'fu_id', type:'UUID'},
+          {key:'none', name:'gstn_irn', type:'VARCHAR(64)'},
+          {key:'none', name:'is_genuine', type:'BOOLEAN'},
+          {key:'none', name:'verified_at', type:'TIMESTAMPTZ'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/fu/upload', desc:'Upload invoice (single)', auth:'SELLER'},
+        {method:'POST', path:'/v1/fu/upload/bulk', desc:'CSV/Excel bulk upload', auth:'SELLER'},
+        {method:'GET',  path:'/v1/fu/{fu_id}', desc:'Get FU details'},
+        {method:'GET',  path:'/v1/fu/{fu_id}/state', desc:'State machine snapshot'},
+        {method:'POST', path:'/v1/fu/{fu_id}/accept', desc:'Buyer acceptance', auth:'BUYER'},
+        {method:'POST', path:'/v1/fu/{fu_id}/reject', desc:'Buyer rejection', auth:'BUYER'},
+        {method:'GET',  path:'/v1/fu/search', desc:'Search FUs by criteria'},
+        {method:'POST', path:'/v1/fu/erp-ingest', desc:'ERP-driven ingestion', auth:'BUYER'}
+      ],
+      externals: [
+        {name:'GSTN / e-Invoice', proto:'REST · OAuth2', purpose:'Real-time invoice authenticity', status:'ok'},
+        {name:'MonetaGo Network', proto:'Hyperledger Fabric', purpose:'Inter-platform de-dup', status:'ok'},
+        {name:'AWS Textract', proto:'REST · SigV4', purpose:'OCR/AI field extraction', status:'ok'},
+        {name:'CERSAI (pre-check)', proto:'SOAP · mTLS', purpose:'Pre-validate registry entry', status:'ok'},
+        {name:'Buyer ERPs', proto:'API/H2H/SFTP', purpose:'SAP/Oracle/Tally bulk ingest', status:'ok'}
+      ]
+    },
+
+    'm3-auction': {
+      title: '③ Auction &amp; Bidding Engine',
+      meta: 'Module M03 · Layer 2 · Business Logic',
+      critical: true,
+      summary: 'Multi-financier transparent auction with real-time bid streaming. All-in-cost visible to seller; anonymised bid display per Circular 2023 §2(e).',
+      regs: 'G18 Annex (k)–(m) · RBI Circular June 2023 §2(c) &amp; §2(e) · MD Loan Transfer 2021',
+      baseTPS: 120, peakTPS: 850,
+      stateMachine: {
+        states: [
+          {id:'queued', label:'QUEUED', x:60, y:60, type:'start'},
+          {id:'open', label:'BIDDING_OPEN', x:240, y:60, type:'active'},
+          {id:'received', label:'BID_RECEIVED', x:420, y:60},
+          {id:'locked', label:'BID_LOCKED', x:600, y:60},
+          {id:'awarded', label:'AWARDED', x:600, y:180},
+          {id:'closed', label:'CLOSED', x:420, y:180},
+          {id:'unsold', label:'UNSOLD', x:240, y:180, type:'terminal'},
+          {id:'cancelled', label:'CANCELLED', x:60, y:180, type:'terminal'}
+        ],
+        edges: [
+          {from:'queued', to:'open', label:'window start'},
+          {from:'open', to:'received', label:'bid in'},
+          {from:'received', to:'locked', label:'lock'},
+          {from:'locked', to:'awarded', label:'seller accept'},
+          {from:'awarded', to:'closed', label:'settle'},
+          {from:'open', to:'unsold', label:'window end'},
+          {from:'open', to:'cancelled', label:'seller cancel'}
+        ],
+        currentState: 'open'
+      },
+      tables: [
+        {name:'auctions', rows:'1,178,442', cols:[
+          {key:'pk', name:'auction_id', type:'UUID'},
+          {key:'fk', name:'fu_id', type:'UUID'},
+          {key:'none', name:'opens_at', type:'TIMESTAMPTZ'},
+          {key:'none', name:'closes_at', type:'TIMESTAMPTZ'},
+          {key:'idx', name:'state', type:'ENUM'},
+          {key:'none', name:'winning_bid_id', type:'UUID'}
+        ]},
+        {name:'bids', rows:'8,432,109', cols:[
+          {key:'pk', name:'bid_id', type:'UUID'},
+          {key:'fk', name:'auction_id', type:'UUID'},
+          {key:'fk', name:'financier_id', type:'UUID'},
+          {key:'none', name:'discount_rate_bps', type:'INTEGER'},
+          {key:'none', name:'is_winning', type:'BOOLEAN'},
+          {key:'none', name:'placed_at', type:'TIMESTAMPTZ'}
+        ]},
+        {name:'financier_limits', rows:'127', cols:[
+          {key:'pk', name:'financier_id', type:'UUID'},
+          {key:'none', name:'max_per_buyer', type:'NUMERIC(18,2)'},
+          {key:'none', name:'max_per_sector', type:'NUMERIC(18,2)'},
+          {key:'none', name:'min_rate_bps', type:'INTEGER'},
+          {key:'none', name:'max_rate_bps', type:'INTEGER'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/auctions/{auction_id}/bids', desc:'Place bid', auth:'FINANCIER'},
+        {method:'GET',  path:'/v1/auctions/{auction_id}/bids', desc:'List visible bids (anonymised)'},
+        {method:'GET',  path:'/v1/auctions/open', desc:'Stream of open auctions', auth:'FINANCIER'},
+        {method:'POST', path:'/v1/auctions/{auction_id}/accept-bid', desc:'Seller accepts winning bid', auth:'SELLER'},
+        {method:'POST', path:'/v1/auctions/{auction_id}/cancel', desc:'Seller cancels', auth:'SELLER'},
+        {method:'GET',  path:'/v1/auctions/ws', desc:'WebSocket — real-time bid stream'},
+        {method:'POST', path:'/v1/auctions/secondary/transfer', desc:'Secondary market transfer', auth:'FINANCIER'}
+      ],
+      externals: [
+        {name:'NCGTC API', proto:'REST · mTLS', purpose:'Real-time guarantee eligibility', status:'ok'},
+        {name:'Redis Cluster', proto:'RESP', purpose:'Active bid state cache', status:'ok'},
+        {name:'Kafka Broker', proto:'Kafka protocol', purpose:'Bid event publish', status:'ok'},
+        {name:'WebSocket Pool', proto:'WSS', purpose:'Real-time bid streaming', status:'ok'}
+      ]
+    },
+
+    'm4-settlement': {
+      title: '④ Settlement Module',
+      meta: 'Module M04 · Layer 2 · Business Logic',
+      critical: true,
+      summary: 'Generates payment obligation files, triggers NACH for T+2 disbursement, due-date debits, insurance NACH, and NACH for non-financed FUs (Circular 2023 §2(d)).',
+      regs: 'G18 §18 · G18 Annex (n)–(p) · RBI Circular June 2023 §2(a)(iv) &amp; §2(d)',
+      baseTPS: 18, peakTPS: 95,
+      stateMachine: {
+        states: [
+          {id:'pending', label:'PENDING', x:60, y:60, type:'start'},
+          {id:'queued', label:'NACH_QUEUED', x:240, y:60},
+          {id:'submitted', label:'SUBMITTED', x:420, y:60},
+          {id:'disbursed', label:'DISBURSED', x:600, y:60, type:'active'},
+          {id:'awaiting', label:'AWAITING_DUE', x:600, y:180},
+          {id:'collected', label:'COLLECTED', x:420, y:180},
+          {id:'defaulted', label:'DEFAULTED', x:240, y:180, type:'terminal'},
+          {id:'failed', label:'FAILED', x:60, y:180, type:'terminal'}
+        ],
+        edges: [
+          {from:'pending', to:'queued', label:'T+0 trigger'},
+          {from:'queued', to:'submitted', label:'NACH file'},
+          {from:'submitted', to:'disbursed', label:'T+2 success'},
+          {from:'submitted', to:'failed', label:'reject'},
+          {from:'disbursed', to:'awaiting', label:'wait'},
+          {from:'awaiting', to:'collected', label:'due-date OK'},
+          {from:'awaiting', to:'defaulted', label:'no pay'}
+        ],
+        currentState: 'disbursed'
+      },
+      tables: [
+        {name:'settlements', rows:'1,156,221', cols:[
+          {key:'pk', name:'settlement_id', type:'UUID'},
+          {key:'fk', name:'fu_id', type:'UUID'},
+          {key:'fk', name:'auction_id', type:'UUID'},
+          {key:'idx', name:'state', type:'ENUM'},
+          {key:'none', name:'amount_disbursed', type:'NUMERIC(18,2)'},
+          {key:'none', name:'disbursement_date', type:'DATE'},
+          {key:'none', name:'collection_date', type:'DATE'}
+        ]},
+        {name:'nach_mandates', rows:'4,872', cols:[
+          {key:'pk', name:'mandate_id', type:'UUID'},
+          {key:'fk', name:'participant_id', type:'UUID'},
+          {key:'none', name:'urn', type:'VARCHAR(20)'},
+          {key:'none', name:'bank_ifsc', type:'CHAR(11)'},
+          {key:'none', name:'account_no', type:'VARCHAR(20)'},
+          {key:'none', name:'is_active', type:'BOOLEAN'}
+        ]},
+        {name:'nach_files', rows:'87,221', cols:[
+          {key:'pk', name:'file_id', type:'UUID'},
+          {key:'idx', name:'cycle_date', type:'DATE'},
+          {key:'none', name:'file_type', type:'ENUM(credit,debit)'},
+          {key:'none', name:'records_count', type:'INTEGER'},
+          {key:'none', name:'total_amount', type:'NUMERIC(20,2)'},
+          {key:'none', name:'sponsor_bank_ack', type:'TIMESTAMPTZ'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/settlements/trigger', desc:'Trigger T+2 settlement', auth:'SYSTEM'},
+        {method:'GET',  path:'/v1/settlements/{settlement_id}', desc:'Get settlement status'},
+        {method:'GET',  path:'/v1/settlements/by-fu/{fu_id}', desc:'Settlement for an FU'},
+        {method:'POST', path:'/v1/nach/mandates', desc:'Register NACH mandate'},
+        {method:'GET',  path:'/v1/nach/mandates/{participant_id}', desc:'List mandates'},
+        {method:'POST', path:'/v1/nach/files/generate', desc:'Generate NACH cycle file', auth:'SYSTEM'},
+        {method:'POST', path:'/v1/settlements/{id}/report-default', desc:'Banker default report', auth:'BANK'}
+      ],
+      externals: [
+        {name:'NPCI NACH', proto:'SFTP + REST', purpose:'Settlement rail', status:'ok'},
+        {name:'Sponsor Bank', proto:'H2H · MQ', purpose:'NACH file transmission', status:'ok'},
+        {name:'CERSAI', proto:'SOAP · mTLS', purpose:'Trigger registration on disbursement', status:'ok'},
+        {name:'Buyer Banks', proto:'NACH echo', purpose:'Default reporting', status:'warn'}
+      ]
+    },
+
+    'm5-cersai': {
+      title: '⑤ CERSAI Filing',
+      meta: 'Module M05 · Layer 2 · Business Logic',
+      critical: true,
+      summary: 'Automatic registration of every receivables assignment with CERSAI — mandatory under TReDS Guidelines and reinforced in Draft 2026 Directions.',
+      regs: 'G18 §17 · Draft RBI TReDS Directions 2026',
+      baseTPS: 12, peakTPS: 65,
+      stateMachine: {
+        states: [
+          {id:'pending', label:'PENDING', x:80, y:60, type:'start'},
+          {id:'submit', label:'SUBMITTING', x:280, y:60},
+          {id:'filed', label:'FILED', x:480, y:60, type:'active'},
+          {id:'retry', label:'RETRY_QUEUE', x:280, y:180},
+          {id:'failed', label:'FAILED', x:80, y:180, type:'terminal'},
+          {id:'closed', label:'CLOSED', x:480, y:180}
+        ],
+        edges: [
+          {from:'pending', to:'submit', label:'trigger'},
+          {from:'submit', to:'filed', label:'200 OK'},
+          {from:'submit', to:'retry', label:'5xx/timeout'},
+          {from:'retry', to:'submit', label:'backoff'},
+          {from:'retry', to:'failed', label:'max retries'},
+          {from:'filed', to:'closed', label:'on settlement'}
+        ],
+        currentState: 'filed'
+      },
+      tables: [
+        {name:'cersai_filings', rows:'1,142,108', cols:[
+          {key:'pk', name:'filing_id', type:'UUID'},
+          {key:'fk', name:'settlement_id', type:'UUID'},
+          {key:'none', name:'cersai_ref_no', type:'VARCHAR(32)'},
+          {key:'idx', name:'state', type:'ENUM'},
+          {key:'none', name:'filed_at', type:'TIMESTAMPTZ'},
+          {key:'none', name:'retry_count', type:'SMALLINT'}
+        ]},
+        {name:'cersai_retry_queue', rows:'47', cols:[
+          {key:'pk', name:'queue_id', type:'UUID'},
+          {key:'fk', name:'filing_id', type:'UUID'},
+          {key:'none', name:'next_attempt_at', type:'TIMESTAMPTZ'},
+          {key:'none', name:'last_error', type:'TEXT'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/cersai/file', desc:'Trigger CERSAI filing', auth:'SYSTEM'},
+        {method:'GET',  path:'/v1/cersai/filings/{filing_id}', desc:'Get filing status'},
+        {method:'GET',  path:'/v1/cersai/filings/by-fu/{fu_id}', desc:'Filings for an FU'},
+        {method:'POST', path:'/v1/cersai/filings/{id}/retry', desc:'Manual retry trigger', auth:'ADMIN'},
+        {method:'GET',  path:'/v1/cersai/retry-queue', desc:'View retry queue', auth:'ADMIN'}
+      ],
+      externals: [
+        {name:'CERSAI Registry', proto:'SOAP · mTLS', purpose:'Statutory assignment filing', status:'ok'}
+      ]
+    },
+
+    'm6-surveillance': {
+      title: '⑥ Surveillance &amp; MIS',
+      meta: 'Module M06 · Layer 2 · Business Logic',
+      critical: false,
+      summary: 'RBI-mandated 24×7 online surveillance plus role-specific real-time MIS dashboards. Apache Flink stream processing with ML anomaly detection.',
+      regs: 'G18 §22(c) — mandatory · PSS Regulations 2008 Reg.6',
+      baseTPS: 250, peakTPS: 1100,
+      stateMachine: {
+        states: [
+          {id:'ingest', label:'INGESTING', x:60, y:60, type:'start'},
+          {id:'process', label:'PROCESSING', x:260, y:60, type:'active'},
+          {id:'normal', label:'NORMAL', x:460, y:60},
+          {id:'anomaly', label:'ANOMALY', x:460, y:180},
+          {id:'review', label:'OFFICER_REVIEW', x:260, y:180},
+          {id:'closed', label:'CLOSED', x:60, y:180}
+        ],
+        edges: [
+          {from:'ingest', to:'process', label:'event'},
+          {from:'process', to:'normal', label:'within bands'},
+          {from:'process', to:'anomaly', label:'ML flag'},
+          {from:'anomaly', to:'review', label:'escalate'},
+          {from:'review', to:'closed', label:'actioned'}
+        ],
+        currentState: 'process'
+      },
+      tables: [
+        {name:'surveillance_events', rows:'42,887,109', cols:[
+          {key:'pk', name:'event_id', type:'UUID'},
+          {key:'idx', name:'event_type', type:'ENUM'},
+          {key:'idx', name:'created_at', type:'TIMESTAMPTZ'},
+          {key:'none', name:'payload', type:'JSONB'},
+          {key:'none', name:'risk_score', type:'DECIMAL(4,3)'}
+        ]},
+        {name:'anomaly_alerts', rows:'14,221', cols:[
+          {key:'pk', name:'alert_id', type:'UUID'},
+          {key:'fk', name:'event_id', type:'UUID'},
+          {key:'idx', name:'severity', type:'ENUM(low,med,high,crit)'},
+          {key:'idx', name:'state', type:'ENUM'},
+          {key:'none', name:'assigned_to', type:'VARCHAR(64)'}
+        ]},
+        {name:'rbi_returns', rows:'487', cols:[
+          {key:'pk', name:'return_id', type:'UUID'},
+          {key:'idx', name:'return_type', type:'ENUM'},
+          {key:'none', name:'period_start', type:'DATE'},
+          {key:'none', name:'period_end', type:'DATE'},
+          {key:'none', name:'submitted_at', type:'TIMESTAMPTZ'}
+        ]}
+      ],
+      apis: [
+        {method:'GET', path:'/v1/surveillance/dashboards/{role}', desc:'Real-time MIS dashboard'},
+        {method:'GET', path:'/v1/surveillance/alerts', desc:'List anomaly alerts', auth:'OFFICER'},
+        {method:'PATCH', path:'/v1/surveillance/alerts/{id}/action', desc:'Officer action', auth:'OFFICER'},
+        {method:'GET', path:'/v1/surveillance/metrics/realtime', desc:'Live volume/value metrics'},
+        {method:'GET', path:'/v1/reports/rbi/{return_type}', desc:'Generate RBI return', auth:'ADMIN'},
+        {method:'POST', path:'/v1/reports/rbi/{return_type}/submit', desc:'Submit to RBI DPSS', auth:'ADMIN'}
+      ],
+      externals: [
+        {name:'Kafka Stream', proto:'Kafka', purpose:'Event ingest', status:'ok'},
+        {name:'Apache Flink', proto:'gRPC', purpose:'Stream processing', status:'ok'},
+        {name:'ML Inference', proto:'REST · gRPC', purpose:'Anomaly scoring', status:'ok'},
+        {name:'RBI DPSS', proto:'SFTP', purpose:'Reg.6 returns submission', status:'ok'}
+      ]
+    },
+
+    'm7-db': {
+      title: '⑦ Primary Database',
+      meta: 'Module M07 · Layer 3 · Data Core',
+      critical: true,
+      summary: 'PostgreSQL/Oracle with AES-256 at-rest encryption, horizontal partitioning, and synchronous replication to the geographically separate DR site.',
+      regs: 'G18 §22(c) BCP/DR · PSS Regulations 2008 Reg.7 · Draft Directions 2026',
+      baseTPS: 1800, peakTPS: 8500,
+      stateMachine: {
+        states: [
+          {id:'primary', label:'PRIMARY_RW', x:60, y:60, type:'active'},
+          {id:'standby', label:'STANDBY_SYNC', x:260, y:60},
+          {id:'replicating', label:'REPLICATING', x:460, y:60},
+          {id:'lag', label:'REPLICATION_LAG', x:460, y:180},
+          {id:'failover', label:'FAILOVER', x:260, y:180},
+          {id:'restored', label:'RESTORED', x:60, y:180}
+        ],
+        edges: [
+          {from:'primary', to:'replicating', label:'WAL ship'},
+          {from:'replicating', to:'standby', label:'apply'},
+          {from:'replicating', to:'lag', label:'slow'},
+          {from:'lag', to:'replicating', label:'catch up'},
+          {from:'primary', to:'failover', label:'PRIMARY DOWN'},
+          {from:'failover', to:'restored', label:'standby promoted'}
+        ],
+        currentState: 'primary'
+      },
+      tables: [
+        {name:'__schema_overview__', rows:'47 tables', cols:[
+          {key:'none', name:'participants', type:'52,847 rows'},
+          {key:'none', name:'factoring_units', type:'1,247,389 rows'},
+          {key:'none', name:'auctions', type:'1,178,442 rows'},
+          {key:'none', name:'bids', type:'8,432,109 rows'},
+          {key:'none', name:'settlements', type:'1,156,221 rows'},
+          {key:'none', name:'cersai_filings', type:'1,142,108 rows'},
+          {key:'none', name:'surveillance_events', type:'42,887,109 rows'}
+        ]},
+        {name:'audit_log', rows:'287,442,109', cols:[
+          {key:'pk', name:'log_id', type:'BIGSERIAL'},
+          {key:'idx', name:'entity_type', type:'VARCHAR(64)'},
+          {key:'idx', name:'entity_id', type:'UUID'},
+          {key:'none', name:'before', type:'JSONB'},
+          {key:'none', name:'after', type:'JSONB'},
+          {key:'idx', name:'changed_at', type:'TIMESTAMPTZ'}
+        ]},
+        {name:'replication_status', rows:'live view', cols:[
+          {key:'none', name:'role', type:'primary | standby'},
+          {key:'none', name:'lag_bytes', type:'BIGINT'},
+          {key:'none', name:'last_received_lsn', type:'pg_lsn'},
+          {key:'none', name:'last_applied_lsn', type:'pg_lsn'}
+        ]}
+      ],
+      apis: [
+        {method:'GET',  path:'/v1/db/health', desc:'DB health snapshot', auth:'ADMIN'},
+        {method:'GET',  path:'/v1/db/replication-lag', desc:'Replication lag metrics', auth:'ADMIN'},
+        {method:'POST', path:'/v1/db/failover/trigger', desc:'Manual DR failover', auth:'ADMIN'},
+        {method:'GET',  path:'/v1/db/audit/{entity_id}', desc:'Audit trail for entity', auth:'AUDITOR'}
+      ],
+      externals: [
+        {name:'DR Site (PG Standby)', proto:'PG streaming repl', purpose:'Synchronous replica', status:'ok'},
+        {name:'S3 Backup Store', proto:'AWS S3', purpose:'WAL archive + base backup', status:'ok'},
+        {name:'KMS', proto:'KMS API', purpose:'AES-256 key management', status:'ok'}
+      ]
+    },
+
+    'm8-ext': {
+      title: '⑧ External Integration Hub',
+      meta: 'Module M08 · Layer 2 → Layer 4',
+      critical: true,
+      summary: 'API mesh fronting every external dependency. Circuit breakers, retry policies, sandbox-to-prod migration, and partner-specific adapters.',
+      regs: 'G18 Annex (d) · G18 §7 · C23 §2(a)–(d) · Draft Directions 2026 §15',
+      baseTPS: 380, peakTPS: 1850,
+      stateMachine: {
+        states: [
+          {id:'idle', label:'IDLE', x:60, y:60, type:'start'},
+          {id:'calling', label:'CALLING', x:240, y:60, type:'active'},
+          {id:'success', label:'SUCCESS', x:420, y:60},
+          {id:'open', label:'CIRCUIT_OPEN', x:420, y:180},
+          {id:'half', label:'HALF_OPEN', x:240, y:180},
+          {id:'failed', label:'FAILED', x:60, y:180, type:'terminal'}
+        ],
+        edges: [
+          {from:'idle', to:'calling', label:'request'},
+          {from:'calling', to:'success', label:'2xx'},
+          {from:'calling', to:'open', label:'5x errors'},
+          {from:'open', to:'half', label:'cooldown'},
+          {from:'half', to:'success', label:'probe OK'},
+          {from:'half', to:'open', label:'probe fail'},
+          {from:'calling', to:'failed', label:'timeout'}
+        ],
+        currentState: 'calling'
+      },
+      tables: [
+        {name:'external_calls', rows:'94,221,887', cols:[
+          {key:'pk', name:'call_id', type:'UUID'},
+          {key:'idx', name:'partner', type:'ENUM(GSTN,CERSAI,...)'},
+          {key:'none', name:'method', type:'VARCHAR(8)'},
+          {key:'none', name:'endpoint', type:'TEXT'},
+          {key:'none', name:'status_code', type:'SMALLINT'},
+          {key:'none', name:'latency_ms', type:'INTEGER'},
+          {key:'idx', name:'called_at', type:'TIMESTAMPTZ'}
+        ]},
+        {name:'circuit_breaker_state', rows:'8 partners', cols:[
+          {key:'pk', name:'partner', type:'VARCHAR(32)'},
+          {key:'idx', name:'state', type:'ENUM(closed,open,half)'},
+          {key:'none', name:'failure_count', type:'INTEGER'},
+          {key:'none', name:'opened_at', type:'TIMESTAMPTZ'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/ext/gstn/verify', desc:'Verify invoice with GSTN'},
+        {method:'POST', path:'/v1/ext/cersai/file', desc:'CERSAI registration'},
+        {method:'POST', path:'/v1/ext/monetago/check', desc:'Inter-platform de-dup'},
+        {method:'POST', path:'/v1/ext/nach/submit', desc:'NACH file submission'},
+        {method:'POST', path:'/v1/ext/ncgtc/eligibility', desc:'Guarantee eligibility'},
+        {method:'POST', path:'/v1/ext/aa/consent', desc:'AA consent capture'},
+        {method:'GET',  path:'/v1/ext/health', desc:'All partner health'},
+        {method:'GET',  path:'/v1/ext/circuit-breakers', desc:'CB state', auth:'ADMIN'}
+      ],
+      externals: [
+        {name:'GSTN', proto:'REST · OAuth2', purpose:'Invoice authenticity', status:'ok'},
+        {name:'CERSAI', proto:'SOAP · mTLS', purpose:'Assignment registration', status:'ok'},
+        {name:'MonetaGo', proto:'Hyperledger Fabric', purpose:'Inter-TReDS de-dup', status:'ok'},
+        {name:'NPCI NACH', proto:'SFTP + REST', purpose:'Settlement rail', status:'ok'},
+        {name:'NCGTC', proto:'REST · mTLS', purpose:'Guarantee API', status:'ok'},
+        {name:'GeM Portal', proto:'REST · OAuth2', purpose:'CPSE flows', status:'warn'},
+        {name:'Account Aggregator', proto:'REST · OAuth2', purpose:'Bank data fetch', status:'ok'},
+        {name:'ERP Connectors', proto:'API/H2H/SFTP', purpose:'SAP/Oracle/Tally', status:'ok'}
+      ]
+    },
+
+    'm-grievance': {
+      title: 'Grievance &amp; Default Reporting',
+      meta: 'Layer 2 · Compliance Module',
+      critical: false,
+      summary: 'Three-tier complaint management with banker default reporting and quarterly RBI disputes return.',
+      regs: 'G18 §20 · G18 Annex (q) · PSS Reg.6(2)(b)–(e)',
+      baseTPS: 3, peakTPS: 22,
+      stateMachine: {
+        states: [
+          {id:'open', label:'OPEN', x:80, y:60, type:'start'},
+          {id:'t1', label:'TIER_1', x:280, y:60},
+          {id:'t2', label:'TIER_2', x:480, y:60},
+          {id:'t3', label:'ARBITRATION', x:480, y:180},
+          {id:'rbi', label:'RBI_ESCALATED', x:280, y:180},
+          {id:'resolved', label:'RESOLVED', x:80, y:180, type:'active'}
+        ],
+        edges: [
+          {from:'open', to:'t1', label:'auto-route'},
+          {from:'t1', to:'t2', label:'48h SLA'},
+          {from:'t2', to:'t3', label:'7d SLA'},
+          {from:'t3', to:'rbi', label:'unresolved'},
+          {from:'t1', to:'resolved', label:'closed'},
+          {from:'t2', to:'resolved', label:'closed'},
+          {from:'t3', to:'resolved', label:'arb award'}
+        ],
+        currentState: 'resolved'
+      },
+      tables: [
+        {name:'tickets', rows:'8,221', cols:[
+          {key:'pk', name:'ticket_id', type:'UUID'},
+          {key:'fk', name:'participant_id', type:'UUID'},
+          {key:'idx', name:'tier', type:'ENUM(1,2,3,rbi)'},
+          {key:'idx', name:'state', type:'ENUM'},
+          {key:'none', name:'opened_at', type:'TIMESTAMPTZ'}
+        ]},
+        {name:'defaults', rows:'342', cols:[
+          {key:'pk', name:'default_id', type:'UUID'},
+          {key:'fk', name:'fu_id', type:'UUID'},
+          {key:'none', name:'reported_by', type:'VARCHAR(64)'},
+          {key:'none', name:'reported_at', type:'TIMESTAMPTZ'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/grievance/tickets', desc:'Open complaint ticket'},
+        {method:'GET',  path:'/v1/grievance/tickets/{id}', desc:'Track ticket'},
+        {method:'POST', path:'/v1/grievance/tickets/{id}/escalate', desc:'Escalate tier'},
+        {method:'POST', path:'/v1/defaults/report', desc:'Banker default report', auth:'BANK'},
+        {method:'GET',  path:'/v1/reports/disputes/quarterly', desc:'Quarterly Reg.6(2)(e) return', auth:'ADMIN'}
+      ],
+      externals: [
+        {name:'RBI Sachet', proto:'Web link', purpose:'External escalation', status:'ok'},
+        {name:'Buyer Banks', proto:'NACH echo', purpose:'Default reporting', status:'warn'}
+      ]
+    },
+
+    // Layer 1 / Layer 3 modules — slimmer profiles
+    'apigw': {
+      title: 'API Gateway',
+      meta: 'Layer 1 · Ingress',
+      critical: true,
+      summary: 'Spring Cloud Gateway. OAuth2/OIDC token verification, mTLS, request signing, throttling per role.',
+      regs: 'G18 §22(c) · Zero-trust architecture',
+      baseTPS: 2400, peakTPS: 12000,
+      stateMachine: {
+        states: [
+          {id:'recv', label:'RECEIVED', x:60, y:60, type:'start'},
+          {id:'auth', label:'AUTHENTICATED', x:240, y:60},
+          {id:'rate', label:'RATE_CHECK', x:420, y:60},
+          {id:'route', label:'ROUTED', x:600, y:60, type:'active'},
+          {id:'reject', label:'REJECTED', x:240, y:180, type:'terminal'}
+        ],
+        edges: [
+          {from:'recv', to:'auth', label:'verify'},
+          {from:'auth', to:'rate', label:'pass'},
+          {from:'rate', to:'route', label:'within limits'},
+          {from:'auth', to:'reject', label:'401'},
+          {from:'rate', to:'reject', label:'429'}
+        ],
+        currentState: 'route'
+      },
+      tables: [
+        {name:'rate_limits', rows:'live · Redis', cols:[
+          {key:'pk', name:'principal', type:'VARCHAR(128)'},
+          {key:'none', name:'window_start', type:'TIMESTAMPTZ'},
+          {key:'none', name:'request_count', type:'INTEGER'}
+        ]},
+        {name:'gateway_routes', rows:'127', cols:[
+          {key:'pk', name:'route_id', type:'VARCHAR(64)'},
+          {key:'none', name:'pattern', type:'TEXT'},
+          {key:'none', name:'target_service', type:'VARCHAR(64)'}
+        ]}
+      ],
+      apis: [
+        {method:'GET',  path:'/health', desc:'Liveness probe', auth:'PUBLIC'},
+        {method:'GET',  path:'/metrics', desc:'Prometheus metrics', auth:'INTERNAL'},
+        {method:'GET',  path:'/admin/routes', desc:'List active routes', auth:'ADMIN'}
+      ],
+      externals: [
+        {name:'IAM (Keycloak)', proto:'OIDC', purpose:'Token validation', status:'ok'},
+        {name:'Redis', proto:'RESP', purpose:'Rate-limit counters', status:'ok'},
+        {name:'All L2 Microservices', proto:'mTLS REST', purpose:'Routed downstream', status:'ok'}
+      ]
+    },
+
+    'iam': {
+      title: 'Identity &amp; Access Management',
+      meta: 'Layer 1 · Zero-Trust',
+      critical: true,
+      summary: 'Role-based access for 4 participant categories with mandatory MFA. Keycloak-based with device fingerprinting.',
+      regs: 'G18 §22(c) · Master Direction KYC 2016',
+      baseTPS: 180, peakTPS: 920,
+      stateMachine: {
+        states: [
+          {id:'login', label:'LOGIN_INIT', x:60, y:60, type:'start'},
+          {id:'pwd', label:'PASSWORD_OK', x:240, y:60},
+          {id:'mfa', label:'MFA_PENDING', x:420, y:60},
+          {id:'session', label:'SESSION_ACTIVE', x:600, y:60, type:'active'},
+          {id:'expired', label:'EXPIRED', x:420, y:180, type:'terminal'},
+          {id:'denied', label:'DENIED', x:240, y:180, type:'terminal'}
+        ],
+        edges: [
+          {from:'login', to:'pwd', label:'ok'},
+          {from:'login', to:'denied', label:'fail'},
+          {from:'pwd', to:'mfa', label:'prompt'},
+          {from:'mfa', to:'session', label:'verified'},
+          {from:'mfa', to:'denied', label:'fail'},
+          {from:'session', to:'expired', label:'timeout'}
+        ],
+        currentState: 'session'
+      },
+      tables: [
+        {name:'users', rows:'52,847', cols:[
+          {key:'pk', name:'user_id', type:'UUID'},
+          {key:'fk', name:'participant_id', type:'UUID'},
+          {key:'none', name:'email', type:'VARCHAR(255)'},
+          {key:'none', name:'role', type:'ENUM'}
+        ]},
+        {name:'sessions', rows:'live · Redis', cols:[
+          {key:'pk', name:'session_id', type:'UUID'},
+          {key:'fk', name:'user_id', type:'UUID'},
+          {key:'none', name:'device_fingerprint', type:'CHAR(64)'},
+          {key:'none', name:'expires_at', type:'TIMESTAMPTZ'}
+        ]}
+      ],
+      apis: [
+        {method:'POST', path:'/v1/auth/login', desc:'Username/password', auth:'PUBLIC'},
+        {method:'POST', path:'/v1/auth/mfa/verify', desc:'MFA OTP/TOTP'},
+        {method:'POST', path:'/v1/auth/logout', desc:'End session'},
+        {method:'POST', path:'/v1/auth/refresh', desc:'Refresh token'},
+        {method:'GET',  path:'/v1/auth/me', desc:'Current user info'}
+      ],
+      externals: [
+        {name:'SMS Gateway', proto:'REST', purpose:'OTP delivery', status:'ok'},
+        {name:'TOTP Service', proto:'RFC 6238', purpose:'Authenticator app', status:'ok'},
+        {name:'Keycloak Cluster', proto:'OIDC', purpose:'Identity provider', status:'ok'}
+      ]
+    }
+  };
+
+  // Modules without rich profiles get a simpler one auto-generated
+  const SIMPLE_MODS = {
+    'waf': {title:'WAF &amp; DDoS', baseTPS:3500, peakTPS:18000, summary:'Perimeter shield. Bot scoring, OWASP rules, geo filtering.', regs:'G18 §22(c) · CERT-In'},
+    'participants': {title:'Participants', baseTPS:0, peakTPS:0, summary:'4 participant roles per Circular June 2023.', regs:'G18 §3 · C23 §2(a)–(b)'},
+    'kafka': {title:'Event Bus (Kafka)', baseTPS:1200, peakTPS:6500, summary:'Apache Kafka backbone for event-driven choreography.', regs:'G18 §22(c) — real-time dissemination'},
+    'redis': {title:'Distributed Cache', baseTPS:8500, peakTPS:42000, summary:'Active auction state, sessions, rate limits. Sub-ms reads.', regs:'G18 §22(c) — performance'},
+    'monetago': {title:'MonetaGo Node', baseTPS:25, peakTPS:180, summary:'Hyperledger Fabric peer node for inter-TReDS de-dup.', regs:'G18 §12'},
+    'ext-nach': {title:'NACH / NPCI', baseTPS:18, peakTPS:95, summary:'Sponsor-bank channel for all settlement flows.', regs:'G18 §18 · C23 §2(a)(iv) &amp; §2(d)'},
+    'ext-gstn': {title:'GSTN / e-Invoice', baseTPS:25, peakTPS:180, summary:'Real-time invoice authenticity check.', regs:'Draft Directions 2026 §15'},
+    'ext-cersai': {title:'CERSAI Registry', baseTPS:12, peakTPS:65, summary:'Statutory assignment registration.', regs:'G18 §17'},
+    'ext-monetago': {title:'MonetaGo Network', baseTPS:25, peakTPS:180, summary:'Inter-TReDS blockchain network.', regs:'G18 §12'},
+    'ext-gem': {title:'GeM Portal', baseTPS:4, peakTPS:18, summary:'CPSE invoice flows.', regs:'Budget 2026-27'},
+    'ext-ncgtc': {title:'NCGTC / CGTMSE', baseTPS:8, peakTPS:42, summary:'Guarantee eligibility API.', regs:'Draft Directions 2026'},
+    'ext-aa': {title:'Account Aggregator', baseTPS:6, peakTPS:28, summary:'Consent-based MSME bank data.', regs:'RBI AA Framework'},
+    'ext-erp': {title:'ERP Connectors', baseTPS:14, peakTPS:75, summary:'SAP/Oracle/Tally bulk ingestion.', regs:'G18 §7'},
+    'bcp': {title:'BCP &amp; DR Site', baseTPS:0, peakTPS:0, summary:'Geographically separate DR with sync replication.', regs:'G18 §22(c) — mandatory'},
+    'reporting': {title:'RBI Reporting', baseTPS:1, peakTPS:8, summary:'Auto-generated PSS Reg.6 &amp; 7 returns.', regs:'PSS Reg.2008'},
+    'observability': {title:'Observability &amp; SOC', baseTPS:850, peakTPS:3200, summary:'Prometheus/Grafana/SIEM. 24×7 SOC.', regs:'G18 §22(c) · Draft 2026 cyber audit'}
+  };
+
+  // ============================================================
+  // RENDERING
+  // ============================================================
+  const inspector = document.getElementById('inspector');
+
+  function pad2(n){return n<10?'0'+n:''+n}
+  function fmtNum(n){return n.toLocaleString('en-IN')}
+
+  function renderInspector(id) {
+    const rich = MODS[id];
+    const slim = SIMPLE_MODS[id];
+    if (!rich && !slim) return;
+
+    if (slim && !rich) {
+      // Render slim view
+      inspector.innerHTML = `
+        <div class="insp-head">
+          <div>
+            <h3 class="insp-title">${slim.title}</h3>
+            <div class="insp-meta">${id}</div>
+            <p class="insp-summary">${slim.summary}</p>
+          </div>
+          <div class="insp-badges">
+            <span class="badge standard">● Edge Component</span>
+          </div>
+        </div>
+        <div class="tab-panels">
+          <p style="color:var(--ink-soft); font-size:13px; margin:0 0 14px">This is a supporting infrastructure component. Live load shown below.</p>
+          <div id="loadPanel"></div>
+          <div class="insp-regs"><strong>Regulatory anchor:</strong> ${slim.regs}</div>
+        </div>
+      `;
+      renderLoadPanel(id, slim, document.getElementById('loadPanel'));
+      startSimulation(id, slim);
+      return;
+    }
+
+    const m = rich;
+    inspector.innerHTML = `
+      <div class="insp-head">
+        <div>
+          <h3 class="insp-title">${m.title}</h3>
+          <div class="insp-meta">${m.meta}</div>
+          <p class="insp-summary">${m.summary}</p>
+        </div>
+        <div class="insp-badges">
+          <span class="badge ${m.critical ? 'critical' : 'standard'}">${m.critical ? '● Critical Path' : '● Standard'}</span>
+          <span class="badge health-ok" id="healthBadge">● Healthy</span>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-tab="state">State Machine</button>
+        <button class="tab" data-tab="db">Database <span class="tab-count">${m.tables.length}</span></button>
+        <button class="tab" data-tab="api">API Endpoints <span class="tab-count">${m.apis.length}</span></button>
+        <button class="tab" data-tab="ext">External Systems <span class="tab-count">${m.externals.length}</span></button>
+        <button class="tab" data-tab="load">Live Load</button>
+      </nav>
+      <div class="tab-panels">
+        <div class="panel active" data-panel="state" id="panelState"></div>
+        <div class="panel" data-panel="db" id="panelDb"></div>
+        <div class="panel" data-panel="api" id="panelApi"></div>
+        <div class="panel" data-panel="ext" id="panelExt"></div>
+        <div class="panel" data-panel="load" id="panelLoad"></div>
+        <div class="insp-regs"><strong>Regulatory anchor:</strong> ${m.regs}</div>
+      </div>
+    `;
+
+    renderStateMachine(m, document.getElementById('panelState'));
+    renderDbTables(m, document.getElementById('panelDb'));
+    renderApis(m, document.getElementById('panelApi'));
+    renderExternals(m, document.getElementById('panelExt'));
+    renderLoadPanel(id, m, document.getElementById('panelLoad'));
+
+    // Tab switching
+    document.querySelectorAll('#tabs .tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('#tabs .tab').forEach(x => x.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(x => x.classList.remove('active'));
+        t.classList.add('active');
+        document.querySelector(`.panel[data-panel="${t.dataset.tab}"]`).classList.add('active');
+      });
+    });
+
+    startSimulation(id, m);
+  }
+
+  // ===== State machine SVG =====
+  function renderStateMachine(m, container) {
+    const sm = m.stateMachine;
+    const W = 720, H = 260;
+
+    // Build edges with curves
+    const edgesSvg = sm.edges.map(e => {
+      const fromS = sm.states.find(s => s.id === e.from);
+      const toS = sm.states.find(s => s.id === e.to);
+      if (!fromS || !toS) return '';
+      const fx = fromS.x, fy = fromS.y, tx = toS.x, ty = toS.y;
+      // node radius for offset
+      const r = 38;
+      const dx = tx - fx, dy = ty - fy;
+      const dist = Math.sqrt(dx*dx + dy*dy);
+      const ux = dx/dist, uy = dy/dist;
+      const sx = fx + ux*r, sy = fy + uy*r;
+      const ex = tx - ux*r, ey = ty - uy*r;
+      const mx = (sx+ex)/2, my = (sy+ey)/2;
+      const isActive = e.from === sm.currentState || e.to === sm.currentState;
+      return `
+        <path class="sm-arrow ${isActive ? 'active' : ''}" d="M${sx} ${sy} L${ex} ${ey}" />
+        <text class="sm-arrow-label" x="${mx}" y="${my-4}" text-anchor="middle">${e.label}</text>
+      `;
+    }).join('');
+
+    const statesSvg = sm.states.map(s => {
+      const isCurrent = s.id === sm.currentState;
+      const cls = isCurrent ? 'active' : (s.type || '');
+      return `
+        <g>
+          <ellipse class="sm-state ${cls}" cx="${s.x}" cy="${s.y}" rx="62" ry="22" data-state-id="${s.id}"/>
+          <text class="sm-label" x="${s.x}" y="${s.y+3}" text-anchor="middle">${s.label}</text>
+        </g>
+      `;
+    }).join('');
+
+    container.innerHTML = `
+      <div class="sm-wrapper">
+        <svg class="sm-svg" viewBox="-20 0 ${W+40} ${H+40}" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="smarrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-mute)"/>
+            </marker>
+          </defs>
+          ${edgesSvg}
+          ${statesSvg}
+        </svg>
+        <div class="sm-controls">
+          <span class="sm-current">Current: <strong>${sm.states.find(s => s.id === sm.currentState).label}</strong></span>
+          <span style="font-size:11px; color:var(--ink-soft); font-style:italic">Diagram reflects steady-state operation. Active state highlighted in green.</span>
+        </div>
+      </div>
+    `;
+  }
+
+  // ===== Database tables =====
+  function renderDbTables(m, container) {
+    const html = m.tables.map(t => `
+      <div class="db-table">
+        <div class="db-head">
+          <span class="db-name">${t.name}</span>
+          <span class="db-rows">${t.rows} rows</span>
+        </div>
+        <div class="db-cols">
+          ${t.cols.map(c => `
+            <div class="db-col">
+              <span class="db-col-key ${c.key}">${c.key === 'none' ? '' : c.key.toUpperCase()}</span>
+              <span class="db-col-name">${c.name}</span>
+              <span class="db-col-type">${c.type}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+    container.innerHTML = `<div class="db-grid">${html}</div>`;
+  }
+
+  // ===== API endpoints =====
+  function renderApis(m, container) {
+    const formatPath = (p) => p.replace(/\{([^}]+)\}/g, '<span class="seg-var">{$1}</span>');
+    const html = m.apis.map(a => `
+      <div class="api-row">
+        <span class="api-method ${a.method}">${a.method}</span>
+        <span class="api-path">${formatPath(a.path)}</span>
+        <span class="api-desc">${a.desc}</span>
+        <span class="api-auth">${a.auth || 'OAuth2'}</span>
+      </div>
+    `).join('');
+    container.innerHTML = `
+      <div style="margin-bottom:14px; font-size:12px; color:var(--ink-soft); display:flex; gap:18px; flex-wrap:wrap">
+        <span><strong style="color:var(--ink)">Base URL:</strong> <code style="font-family:'JetBrains Mono', monospace; background:#f6f5f1; padding:2px 6px; border-radius:4px">https://api.receivabridge.in</code></span>
+        <span><strong style="color:var(--ink)">Auth:</strong> OAuth2 + mTLS</span>
+        <span><strong style="color:var(--ink)">Rate limit:</strong> 1000 req/min per principal</span>
+      </div>
+      <div class="api-list">${html}</div>
+    `;
+  }
+
+  // ===== External systems =====
+  function renderExternals(m, container) {
+    const statusLabel = {ok:'OPERATIONAL', warn:'DEGRADED', err:'DOWN'};
+    const html = m.externals.map(e => `
+      <div class="ext-card">
+        <div class="ext-ico">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+        </div>
+        <div class="ext-body">
+          <h4 class="ext-name">${e.name}</h4>
+          <div class="ext-proto">${e.proto}</div>
+          <p class="ext-purpose">${e.purpose}</p>
+          <div class="ext-status">
+            <span class="status-dot ${e.status}"></span>
+            <span style="color:${e.status === 'ok' ? 'var(--ok)' : e.status === 'warn' ? 'var(--warn)' : 'var(--err)'}">${statusLabel[e.status]}</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+    container.innerHTML = `<div class="ext-grid">${html}</div>`;
+  }
+
+  // ===== Live Load panel =====
+  function renderLoadPanel(id, m, container) {
+    container.innerHTML = `
+      <div class="load-grid">
+        <div class="metric">
+          <div class="metric-label">Current TPS</div>
+          <div><span class="metric-value" id="lp-tps">—</span><span class="metric-unit">req/sec</span></div>
+          <div class="metric-trend up" id="lp-tps-trend">●</div>
+          <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="lp-tps-gauge" style="width:0"></div></div></div>
+          <svg class="sparkline" id="lp-tps-spark" viewBox="0 0 200 40" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="metric">
+          <div class="metric-label">P99 Latency</div>
+          <div><span class="metric-value" id="lp-lat">—</span><span class="metric-unit">ms</span></div>
+          <div class="metric-trend" id="lp-lat-trend">●</div>
+          <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="lp-lat-gauge" style="width:0"></div></div></div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Success Rate</div>
+          <div><span class="metric-value" id="lp-succ">—</span><span class="metric-unit">%</span></div>
+          <div class="metric-trend up" id="lp-succ-trend">●</div>
+          <div class="gauge-wrap"><div class="gauge"><div class="gauge-fill" id="lp-succ-gauge" style="width:0; background:var(--ok)"></div></div></div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Active Connections</div>
+          <div><span class="metric-value" id="lp-conn">—</span></div>
+          <div class="metric-trend" id="lp-conn-trend">●</div>
+        </div>
+      </div>
+      <div class="load-log" id="lp-log"></div>
+    `;
+  }
+
+  // ============================================================
+  // SIMULATION ENGINE
+  // ============================================================
+  const sparkHistory = {};      // moduleId → array of last 30 tps values
+  const cardTpsValues = {};     // moduleId → current tps for card display
+  let simInterval = null;
+  let activeModuleId = null;
+
+  // Diurnal load profile — load multiplier 0..1 across the day
+  function loadMultiplier(t) {
+    // t: ms since simulated midnight; map 24h to a sine-ish shape
+    const hour = (t / 3600000) % 24;
+    // Business hours (10am-6pm) → high; lunch dip; settlement spike at T+2 cutoff (5pm)
+    let m = 0.2 + 0.8 * Math.max(0, Math.sin(((hour - 6) / 12) * Math.PI));
+    if (hour > 12.5 && hour < 13.5) m *= 0.7;       // lunch dip
+    if (hour > 16.5 && hour < 17.5) m = Math.min(1, m * 1.6); // settlement spike
+    return Math.max(0.1, m);
+  }
+  // Use real wall-clock time to drive the curve so different hours show different loads
+  function simNow() { return Date.now(); }
+
+  function generateTPS(mod, jitter=0.18) {
+    const base = mod.baseTPS || 1;
+    const peak = mod.peakTPS || base * 6;
+    const m = loadMultiplier(simNow());
+    const target = base + (peak - base) * m;
+    const noise = 1 + (Math.random() - 0.5) * 2 * jitter;
+    return Math.max(0, Math.round(target * noise));
+  }
+
+  function generateLatency(mod) {
+    const base = 20 + Math.random() * 30;
+    const m = loadMultiplier(simNow());
+    return Math.round(base + m * 60 + Math.random() * 20);
+  }
+
+  function generateSuccess() {
+    return (98.5 + Math.random() * 1.4).toFixed(2);
+  }
+
+  // Sparkline rendering
+  function drawSparkline(svgEl, values) {
+    if (!svgEl || values.length < 2) return;
+    const max = Math.max(...values, 1);
+    const points = values.map((v, i) => {
+      const x = (i / (values.length - 1)) * 200;
+      const y = 38 - (v / max) * 36;
+      return `${x},${y}`;
+    }).join(' ');
+    const lastVal = values[values.length-1];
+    const isHigh = lastVal / max > 0.7;
+    svgEl.innerHTML = `
+      <polyline fill="none" stroke="${isHigh ? 'var(--warn)' : 'var(--ok)'}" stroke-width="1.5" points="${points}"/>
+      <polyline fill="${isHigh ? 'var(--warn)' : 'var(--ok)'}" fill-opacity="0.1" stroke="none" points="0,40 ${points} 200,40"/>
+    `;
+  }
+
+  // Log message generator
+  const LOG_TEMPLATES = {
+    'm1-onboarding': [
+      ['INFO', 'Video KYC session initiated for participant'],
+      ['OK',   'Udyam verification successful'],
+      ['OK',   'AML screening clean — participant activated'],
+      ['WARN', 'Video KYC liveness score below threshold, manual review queued'],
+      ['INFO', 'Master Agreement e-signed']
+    ],
+    'm2-invoice': [
+      ['OK',   'GSTN verification: invoice genuine'],
+      ['OK',   'MonetaGo de-dup check: unique hash'],
+      ['INFO', 'OCR extraction completed, 12 fields parsed'],
+      ['WARN', 'Duplicate invoice detected — rejecting'],
+      ['OK',   'FU created and queued for buyer acceptance']
+    ],
+    'm3-auction': [
+      ['OK',   'Bid placed by financier_id=BNK_007'],
+      ['INFO', 'Auction window closing in 15 min'],
+      ['OK',   'Seller accepted winning bid @ 8.42% rate'],
+      ['INFO', 'Secondary market transfer initiated'],
+      ['WARN', 'Bid rejected — exceeds financier sector limit']
+    ],
+    'm4-settlement': [
+      ['OK',   'NACH credit file submitted to sponsor bank'],
+      ['OK',   'T+2 disbursement successful'],
+      ['INFO', 'Due-date debit cycle generated'],
+      ['ERR',  'NACH return: R03 No such account'],
+      ['OK',   'Insurance premium NACH processed']
+    ],
+    'm5-cersai': [
+      ['OK',   'CERSAI filing successful, ref CRS_2026_18772'],
+      ['WARN', 'CERSAI API timeout, queued for retry'],
+      ['INFO', 'Retry attempt 2/3 in progress'],
+      ['OK',   'Re-filing on secondary market transfer complete']
+    ],
+    'm6-surveillance': [
+      ['INFO', 'Stream processor: 1.2k events/sec'],
+      ['WARN', 'Anomaly detected: financier concentration spike'],
+      ['OK',   'ML model inference batch completed'],
+      ['INFO', 'Quarterly RBI return prepared'],
+      ['OK',   'Alert escalated to surveillance officer']
+    ],
+    'm7-db': [
+      ['OK',   'Replication lag: 0.4s'],
+      ['INFO', 'Vacuum auto-running on factoring_units'],
+      ['OK',   'WAL archive shipped to S3'],
+      ['WARN', 'Slow query detected: bid scan > 200ms'],
+      ['OK',   'Standby caught up with primary']
+    ],
+    'm8-ext': [
+      ['OK',   'GSTN call: 200 OK in 142ms'],
+      ['WARN', 'GeM circuit breaker → HALF_OPEN'],
+      ['OK',   'CERSAI registration: 200 OK'],
+      ['ERR',  'NCGTC partner: 503 Service Unavailable'],
+      ['OK',   'MonetaGo Fabric query: hash unique']
+    ],
+    'm-grievance': [
+      ['INFO', 'New ticket opened by seller_id=MSME_4421'],
+      ['OK',   'Tier-1 resolved within SLA (38h)'],
+      ['WARN', 'Tier-2 escalation: payment dispute'],
+      ['INFO', 'Banker default report received']
+    ],
+    'apigw': [
+      ['OK',   'Route /v1/fu/upload → invoice-svc OK'],
+      ['WARN', 'Rate limit hit for principal API_KEY_X'],
+      ['OK',   '12k req/sec sustained, latency p99=68ms'],
+      ['INFO', 'Token introspection cache hit ratio 94%']
+    ],
+    'iam': [
+      ['OK',   'MFA OTP verified for user'],
+      ['INFO', 'Session refreshed via refresh token'],
+      ['WARN', 'Failed login attempt — captcha required'],
+      ['OK',   'Device fingerprint updated']
+    ]
+  };
+
+  function defaultLogs(id) { return [['INFO', 'Heartbeat OK'], ['OK', 'Health check passed']]; }
+
+  function pushLog(id) {
+    const logEl = document.getElementById('lp-log');
+    if (!logEl) return;
+    const templates = LOG_TEMPLATES[id] || defaultLogs(id);
+    const [level, msg] = templates[Math.floor(Math.random() * templates.length)];
+    const now = new Date();
+    const time = `${pad2(now.getHours())}:${pad2(now.getMinutes())}:${pad2(now.getSeconds())}`;
+    const row = document.createElement('div');
+    row.className = 'load-log-row';
+    row.innerHTML = `<span class="log-time">${time}</span><span class="log-level ${level}">${level.padEnd(4,' ')}</span><span class="log-msg">${msg}</span>`;
+    logEl.insertBefore(row, logEl.firstChild);
+    while (logEl.children.length > 30) logEl.removeChild(logEl.lastChild);
+  }
+
+  // Update all card TPS badges (background simulation, runs always)
+  function updateAllCardTPS() {
+    Object.keys(SIMPLE_MODS).concat(Object.keys(MODS)).forEach(id => {
+      const m = MODS[id] || SIMPLE_MODS[id];
+      if (!m) return;
+      if (!m.baseTPS && !m.peakTPS) return;
+      const tps = generateTPS(m, 0.10);
+      cardTpsValues[id] = tps;
+      const badge = document.querySelector(`[data-tps-key="${id}"]`);
+      if (badge) {
+        badge.textContent = `${tps} tps`;
+      }
+    });
+  }
+
+  function tickInspector() {
+    if (!activeModuleId) return;
+    const m = MODS[activeModuleId] || SIMPLE_MODS[activeModuleId];
+    if (!m || !m.baseTPS) return;
+
+    const tps = generateTPS(m);
+    const lat = generateLatency(m);
+    const succ = generateSuccess();
+    const conn = Math.round(tps * (3 + Math.random() * 4));
+
+    sparkHistory[activeModuleId] = sparkHistory[activeModuleId] || [];
+    sparkHistory[activeModuleId].push(tps);
+    if (sparkHistory[activeModuleId].length > 30) sparkHistory[activeModuleId].shift();
+
+    const tpsEl = document.getElementById('lp-tps');
+    const latEl = document.getElementById('lp-lat');
+    const succEl = document.getElementById('lp-succ');
+    const connEl = document.getElementById('lp-conn');
+    if (!tpsEl) return; // panel not in DOM (different tab maybe still works since hidden but elements exist)
+
+    tpsEl.textContent = fmtNum(tps);
+    latEl.textContent = lat;
+    succEl.textContent = succ;
+    connEl.textContent = fmtNum(conn);
+
+    const tpsGauge = document.getElementById('lp-tps-gauge');
+    const latGauge = document.getElementById('lp-lat-gauge');
+    const succGauge = document.getElementById('lp-succ-gauge');
+    if (tpsGauge) {
+      const pct = Math.min(100, (tps / m.peakTPS) * 100);
+      tpsGauge.style.width = pct + '%';
+      tpsGauge.classList.toggle('high', pct > 70);
+    }
+    if (latGauge) {
+      const pct = Math.min(100, (lat / 200) * 100);
+      latGauge.style.width = pct + '%';
+      latGauge.classList.toggle('high', pct > 60);
+    }
+    if (succGauge) {
+      succGauge.style.width = succ + '%';
+    }
+
+    drawSparkline(document.getElementById('lp-tps-spark'), sparkHistory[activeModuleId]);
+
+    // Health badge
+    const hb = document.getElementById('healthBadge');
+    if (hb) {
+      const peakRatio = tps / m.peakTPS;
+      if (peakRatio > 0.85 || lat > 150) {
+        hb.className = 'badge health-warn';
+        hb.textContent = '● Heavy Load';
+      } else {
+        hb.className = 'badge health-ok';
+        hb.textContent = '● Healthy';
+      }
+    }
+
+    if (Math.random() < 0.5) pushLog(activeModuleId);
+  }
+
+  function startSimulation(id, m) {
+    activeModuleId = id;
+    // Seed the log
+    for (let i = 0; i < 5; i++) pushLog(id);
+    // First tick immediate
+    tickInspector();
+  }
+
+  // Master simulation tick — runs always (independent of which module is selected)
+  function masterTick() {
+    updateAllCardTPS();
+    tickInspector();
+  }
+  simInterval = setInterval(masterTick, 1500);
+  updateAllCardTPS();
+
+  // ============================================================
+  // INTERACTION — clicks, toolbar
+  // ============================================================
+  const allMods = document.querySelectorAll('.mod');
+  const critToggle = document.getElementById('critToggle');
+  const loadToggle = document.getElementById('loadToggle');
+  const resetBtn = document.getElementById('resetBtn');
+  const viewBtns = document.querySelectorAll('[data-view]');
+
+  // Flow map for visual highlighting on selection
+  const FLOW_MAP = {
+    'm1-onboarding': ['participants','iam','m7-db','ext-gstn'],
+    'm2-invoice': ['participants','ext-gstn','ext-monetago','monetago','m7-db','kafka','m3-auction','ext-erp','ext-gem'],
+    'm3-auction': ['m2-invoice','participants','redis','ext-ncgtc','m4-settlement','kafka'],
+    'm4-settlement': ['m3-auction','ext-nach','m5-cersai','m7-db','kafka'],
+    'm5-cersai': ['m4-settlement','ext-cersai','m7-db'],
+    'm6-surveillance': ['kafka','reporting','observability','m7-db'],
+    'm7-db': ['m1-onboarding','m2-invoice','m3-auction','m4-settlement','m5-cersai','m6-surveillance','bcp','reporting'],
+    'm8-ext': ['ext-nach','ext-gstn','ext-cersai','ext-monetago','ext-gem','ext-ncgtc','ext-aa','ext-erp'],
+    'm-grievance': ['participants','m7-db','reporting'],
+    'waf': ['participants','apigw'],
+    'apigw': ['waf','iam','m1-onboarding','m2-invoice','m3-auction'],
+    'iam': ['apigw','m1-onboarding','m7-db'],
+    'participants': ['waf','m1-onboarding','m2-invoice','m3-auction','ext-erp'],
+    'kafka': ['m2-invoice','m3-auction','m4-settlement','m6-surveillance','observability'],
+    'redis': ['m3-auction','iam'],
+    'monetago': ['m2-invoice','ext-monetago']
+  };
+
+  function selectModule(id) {
+    allMods.forEach(el => el.classList.remove('active','flow-on'));
+    document.body.classList.add('flow-active');
+    const target = document.querySelector(`.mod[data-id="${id}"]`);
+    if (target) target.classList.add('active','flow-on');
+    (FLOW_MAP[id] || []).forEach(connId => {
+      const el = document.querySelector(`.mod[data-id="${connId}"]`);
+      if (el) el.classList.add('flow-on');
+    });
+    renderInspector(id);
+    inspector.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function resetSelection() {
+    activeModuleId = null;
+    allMods.forEach(el => el.classList.remove('active','flow-on'));
+    document.body.classList.remove('flow-active');
+    inspector.innerHTML = `
+      <div class="insp-empty">
+        <div class="ring">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16 16l5 5"/></svg>
+        </div>
+        <p><strong>Click any module above</strong> to inspect state machine, database tables, API endpoints, external connections, and live transaction load.</p>
+      </div>
+    `;
+  }
+
+  allMods.forEach(el => {
+    el.addEventListener('click', () => selectModule(el.dataset.id));
+  });
+
+  critToggle.addEventListener('click', () => {
+    document.body.classList.toggle('show-critical');
+    critToggle.classList.toggle('active');
+  });
+
+  loadToggle.addEventListener('click', () => {
+    document.body.classList.toggle('show-load');
+    loadToggle.classList.toggle('active');
+    loadToggle.textContent = document.body.classList.contains('show-load') ? 'Hide Live TPS' : 'Show Live TPS';
+  });
+
+  resetBtn.addEventListener('click', resetSelection);
+
+  viewBtns.forEach(b => {
+    b.addEventListener('click', () => {
+      viewBtns.forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const view = b.dataset.view;
+      document.querySelectorAll('.layer').forEach(layer => {
+        if (view === 'all') layer.style.display = '';
+        else if (view === 'business') layer.style.display = layer.classList.contains('l2') ? '' : 'none';
+      });
+    });
+  });
+</script>
+</body>
+</html>
