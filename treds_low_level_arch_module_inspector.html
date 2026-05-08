@@ -115,7 +115,7 @@
   /* ============ Diagram canvas ============ */
   .canvas{
     position:relative; background:#fff; border:1px solid var(--line);
-    border-radius:18px; padding:28px 24px 24px; box-shadow:var(--shadow-md); overflow:hidden;
+    border-radius:18px; padding:48px 24px 32px; box-shadow:var(--shadow-md); overflow:hidden;
   }
   .canvas::before{
     content:''; position:absolute; inset:0;
@@ -124,6 +124,38 @@
       linear-gradient(90deg, rgba(20,24,31,.025) 1px, transparent 1px);
     background-size: 32px 32px; pointer-events:none; z-index:0;
   }
+
+  /* Connection overlay — draws arrows between selected module and connected modules */
+  .connection-overlay{
+    position:absolute; top:0; left:0;
+    width:100%; height:100%;
+    pointer-events:none; z-index:5;
+    opacity:0; transition: opacity .25s ease;
+  }
+  body.flow-active .connection-overlay{opacity:1}
+
+  .conn-line{
+    fill:none; stroke:#14181f; stroke-width:1.6;
+    stroke-dasharray: 5 4;
+    marker-end: url(#connArrow);
+    marker-start: url(#connArrowSrc);
+    animation: dashFlow 1.2s linear infinite;
+    opacity:.85;
+  }
+  @keyframes dashFlow{
+    to{ stroke-dashoffset: -18; }
+  }
+  .conn-line.glow{
+    filter: drop-shadow(0 0 4px rgba(20,24,31,.25));
+  }
+  .conn-label{
+    font-family:'JetBrains Mono', monospace; font-size:9px;
+    font-weight:600; letter-spacing:.08em;
+    fill:#14181f;
+    paint-order: stroke;
+    stroke:#fff; stroke-width:3.5; stroke-linejoin:round;
+  }
+
   .layers{position:relative; z-index:1}
   .layer{
     display:grid; grid-template-columns: 180px 1fr; gap:20px;
@@ -318,9 +350,12 @@
   }
   .sm-arrow.active{stroke:var(--ok); stroke-width:2}
   .sm-arrow-label{
-    font-family:'JetBrains Mono', monospace; font-size:9px;
-    fill:var(--ink-soft); font-style:italic;
+    font-family:'JetBrains Mono', monospace; font-size:9.5px;
+    fill:var(--ink); font-style:italic; font-weight:500;
+    paint-order: stroke;
+    stroke:#fafaf6; stroke-width:3.5; stroke-linejoin:round;
   }
+  .sm-arrow-label.active{fill:var(--ok); font-weight:600}
   .sm-controls{
     display:flex; gap:10px; align-items:center; margin-top:14px;
     padding-top:14px; border-top:1px dashed var(--line);
@@ -567,6 +602,16 @@
 
   <!-- Diagram canvas -->
   <div class="canvas">
+    <svg class="connection-overlay" id="connOverlay" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <defs>
+        <marker id="connArrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M 0 0 L 10 5 L 0 10 z" fill="#14181f"/>
+        </marker>
+        <marker id="connArrowSrc" viewBox="0 0 10 10" refX="1" refY="5" markerWidth="5" markerHeight="5" orient="auto">
+          <circle cx="5" cy="5" r="3" fill="#14181f"/>
+        </marker>
+      </defs>
+    </svg>
     <div class="layers">
 
       <!-- LAYER 1 — Engagement -->
@@ -638,7 +683,7 @@
               <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M9 13h6M9 17h4"/></svg></div>
               <div><div class="mod-title">② Invoice / FU Upload</div><div class="mod-id">M02 · OCR · GSTN</div></div>
             </div>
-            <p class="mod-desc">OCR/AI extraction → GSTN cross-verify → MonetaGo de-dup → CERSAI pre-check → FU created.</p>
+            <p class="mod-desc">OCR/AI extraction → GSTN cross-verify → MonetaGo de-dup → CERSAI pre-check → FU created → Buyer confirmation.</p>
             <div class="mod-tech"><span class="tag">Textract</span><span class="tag">GSTN</span><span class="tag">CERSAI</span></div>
           </div>
           <div class="mod l2" data-id="m3-auction" data-critical="true">
@@ -647,7 +692,7 @@
               <div class="mod-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4l6 6-3 3-6-6 3-3zM10 10l-7 7v3h3l7-7"/></svg></div>
               <div><div class="mod-title">③ Auction &amp; Bidding</div><div class="mod-id">M03 · matching</div></div>
             </div>
-            <p class="mod-desc">Multi-financier real-time bidding. WebSockets. Anonymised bid display.</p>
+            <p class="mod-desc">Multi-financier real-time bidding with NCGTC/CGTMSE guarantee eligibility check. WebSockets. Anonymised bid display.</p>
             <div class="mod-tech"><span class="tag">WebSocket</span><span class="tag">Redis</span></div>
           </div>
           <div class="mod l2" data-id="m4-settlement" data-critical="true">
@@ -958,7 +1003,7 @@
       title: '② Invoice / FU Upload',
       meta: 'Module M02 · Layer 2 · Business Logic',
       critical: true,
-      summary: 'Heart of the platform. Ingests invoices, validates against GSTN, prevents duplicates via MonetaGo, and creates the legally enforceable Factoring Unit.',
+      summary: 'Heart of the platform. Ingests invoices, validates against GSTN, prevents duplicates via MonetaGo, creates the legally enforceable Factoring Unit, and routes it to the buyer for unconditional confirmation before bidding opens.',
       regs: 'G18 §10, §12, Annex (g)–(h) · Draft RBI TReDS Directions 2026 §15',
       baseTPS: 25, peakTPS: 180,
       stateMachine: {
@@ -967,9 +1012,10 @@
           {id:'ocr', label:'OCR', x:220, y:60},
           {id:'gstn', label:'GSTN_VERIFY', x:380, y:60},
           {id:'dedup', label:'DEDUP_CHECK', x:540, y:60},
-          {id:'fu', label:'FU_CREATED', x:540, y:180},
-          {id:'pending', label:'BUYER_REVIEW', x:380, y:180},
-          {id:'accepted', label:'ACCEPTED', x:220, y:180, type:'active'},
+          {id:'fu', label:'FU_CREATED', x:700, y:60},
+          {id:'pending', label:'BUYER_REVIEW', x:540, y:180},
+          {id:'confirmed', label:'BUYER_CONFIRMED', x:380, y:180, type:'active'},
+          {id:'auction', label:'TO_AUCTION', x:220, y:180},
           {id:'rejected', label:'REJECTED', x:60, y:180, type:'terminal'}
         ],
         edges: [
@@ -980,11 +1026,12 @@
           {from:'gstn', to:'rejected', label:'fake'},
           {from:'dedup', to:'fu', label:'unique'},
           {from:'dedup', to:'rejected', label:'duplicate'},
-          {from:'fu', to:'pending', label:'notify'},
-          {from:'pending', to:'accepted', label:'buyer ack'},
-          {from:'pending', to:'rejected', label:'expired'}
+          {from:'fu', to:'pending', label:'notify buyer'},
+          {from:'pending', to:'confirmed', label:'buyer ack'},
+          {from:'pending', to:'rejected', label:'expired/decline'},
+          {from:'confirmed', to:'auction', label:'broadcast'}
         ],
-        currentState: 'accepted'
+        currentState: 'confirmed'
       },
       tables: [
         {name:'factoring_units', rows:'1,247,389', cols:[
@@ -1011,6 +1058,16 @@
           {key:'none', name:'gstn_irn', type:'VARCHAR(64)'},
           {key:'none', name:'is_genuine', type:'BOOLEAN'},
           {key:'none', name:'verified_at', type:'TIMESTAMPTZ'}
+        ]},
+        {name:'buyer_confirmations', rows:'1,178,442', cols:[
+          {key:'pk', name:'confirmation_id', type:'UUID'},
+          {key:'fk', name:'fu_id', type:'UUID'},
+          {key:'fk', name:'buyer_id', type:'UUID'},
+          {key:'idx', name:'state', type:'ENUM(pending,confirmed,declined,expired)'},
+          {key:'none', name:'unconditional_ack', type:'BOOLEAN'},
+          {key:'none', name:'no_setoff_ack', type:'BOOLEAN'},
+          {key:'none', name:'confirmed_at', type:'TIMESTAMPTZ'},
+          {key:'none', name:'sla_deadline', type:'TIMESTAMPTZ'}
         ]}
       ],
       apis: [
@@ -1018,8 +1075,9 @@
         {method:'POST', path:'/v1/fu/upload/bulk', desc:'CSV/Excel bulk upload', auth:'SELLER'},
         {method:'GET',  path:'/v1/fu/{fu_id}', desc:'Get FU details'},
         {method:'GET',  path:'/v1/fu/{fu_id}/state', desc:'State machine snapshot'},
-        {method:'POST', path:'/v1/fu/{fu_id}/accept', desc:'Buyer acceptance', auth:'BUYER'},
-        {method:'POST', path:'/v1/fu/{fu_id}/reject', desc:'Buyer rejection', auth:'BUYER'},
+        {method:'GET',  path:'/v1/fu/pending-confirmation', desc:'Buyer queue: FUs awaiting confirmation', auth:'BUYER'},
+        {method:'POST', path:'/v1/fu/{fu_id}/confirm', desc:'Buyer unconditional confirmation', auth:'BUYER'},
+        {method:'POST', path:'/v1/fu/{fu_id}/decline', desc:'Buyer decline (with reason)', auth:'BUYER'},
         {method:'GET',  path:'/v1/fu/search', desc:'Search FUs by criteria'},
         {method:'POST', path:'/v1/fu/erp-ingest', desc:'ERP-driven ingestion', auth:'BUYER'}
       ],
@@ -1036,24 +1094,28 @@
       title: '③ Auction &amp; Bidding Engine',
       meta: 'Module M03 · Layer 2 · Business Logic',
       critical: true,
-      summary: 'Multi-financier transparent auction with real-time bid streaming. All-in-cost visible to seller; anonymised bid display per Circular 2023 §2(e).',
-      regs: 'G18 Annex (k)–(m) · RBI Circular June 2023 §2(c) &amp; §2(e) · MD Loan Transfer 2021',
+      summary: 'Multi-financier transparent auction with real-time bid streaming. All-in-cost visible to seller; anonymised bid display per Circular 2023 §2(e). Real-time NCGTC/CGTMSE credit guarantee eligibility check at the bidding stage enables financiers to bid more competitively on lower-rated buyers.',
+      regs: 'G18 Annex (k)–(m) · RBI Circular June 2023 §2(c) &amp; §2(e) · MD Loan Transfer 2021 · Draft RBI TReDS Directions 2026 (NCGTC/CGTMSE) · Budget 2026-27',
       baseTPS: 120, peakTPS: 850,
       stateMachine: {
         states: [
           {id:'queued', label:'QUEUED', x:60, y:60, type:'start'},
-          {id:'open', label:'BIDDING_OPEN', x:240, y:60, type:'active'},
-          {id:'received', label:'BID_RECEIVED', x:420, y:60},
-          {id:'locked', label:'BID_LOCKED', x:600, y:60},
-          {id:'awarded', label:'AWARDED', x:600, y:180},
-          {id:'closed', label:'CLOSED', x:420, y:180},
-          {id:'unsold', label:'UNSOLD', x:240, y:180, type:'terminal'},
+          {id:'open', label:'BIDDING_OPEN', x:220, y:60, type:'active'},
+          {id:'received', label:'BID_RECEIVED', x:380, y:60},
+          {id:'guarantee', label:'GUARANTEE_CHECK', x:540, y:60},
+          {id:'locked', label:'BID_LOCKED', x:700, y:60},
+          {id:'awarded', label:'AWARDED', x:700, y:180},
+          {id:'closed', label:'CLOSED', x:540, y:180},
+          {id:'unsold', label:'UNSOLD', x:380, y:180, type:'terminal'},
+          {id:'rejected', label:'BID_REJECTED', x:220, y:180, type:'terminal'},
           {id:'cancelled', label:'CANCELLED', x:60, y:180, type:'terminal'}
         ],
         edges: [
           {from:'queued', to:'open', label:'window start'},
           {from:'open', to:'received', label:'bid in'},
-          {from:'received', to:'locked', label:'lock'},
+          {from:'received', to:'guarantee', label:'NCGTC/CGTMSE check'},
+          {from:'guarantee', to:'locked', label:'eligible / N/A'},
+          {from:'guarantee', to:'rejected', label:'limits breach'},
           {from:'locked', to:'awarded', label:'seller accept'},
           {from:'awarded', to:'closed', label:'settle'},
           {from:'open', to:'unsold', label:'window end'},
@@ -1084,10 +1146,20 @@
           {key:'none', name:'max_per_sector', type:'NUMERIC(18,2)'},
           {key:'none', name:'min_rate_bps', type:'INTEGER'},
           {key:'none', name:'max_rate_bps', type:'INTEGER'}
+        ]},
+        {name:'guarantee_checks', rows:'4,221,889', cols:[
+          {key:'pk', name:'check_id', type:'UUID'},
+          {key:'fk', name:'bid_id', type:'UUID'},
+          {key:'idx', name:'scheme', type:'ENUM(NCGTC,CGTMSE)'},
+          {key:'none', name:'is_eligible', type:'BOOLEAN'},
+          {key:'none', name:'coverage_pct', type:'DECIMAL(5,2)'},
+          {key:'none', name:'premium_bps', type:'INTEGER'},
+          {key:'none', name:'checked_at', type:'TIMESTAMPTZ'}
         ]}
       ],
       apis: [
         {method:'POST', path:'/v1/auctions/{auction_id}/bids', desc:'Place bid', auth:'FINANCIER'},
+        {method:'POST', path:'/v1/auctions/{auction_id}/guarantee-eligibility', desc:'NCGTC/CGTMSE eligibility check', auth:'FINANCIER'},
         {method:'GET',  path:'/v1/auctions/{auction_id}/bids', desc:'List visible bids (anonymised)'},
         {method:'GET',  path:'/v1/auctions/open', desc:'Stream of open auctions', auth:'FINANCIER'},
         {method:'POST', path:'/v1/auctions/{auction_id}/accept-bid', desc:'Seller accepts winning bid', auth:'SELLER'},
@@ -1096,7 +1168,7 @@
         {method:'POST', path:'/v1/auctions/secondary/transfer', desc:'Secondary market transfer', auth:'FINANCIER'}
       ],
       externals: [
-        {name:'NCGTC API', proto:'REST · mTLS', purpose:'Real-time guarantee eligibility', status:'ok'},
+        {name:'NCGTC / CGTMSE', proto:'REST · mTLS', purpose:'Real-time credit guarantee eligibility &amp; coverage', status:'ok'},
         {name:'Redis Cluster', proto:'RESP', purpose:'Active bid state cache', status:'ok'},
         {name:'Kafka Broker', proto:'Kafka protocol', purpose:'Bid event publish', status:'ok'},
         {name:'WebSocket Pool', proto:'WSS', purpose:'Real-time bid streaming', status:'ok'}
@@ -1692,30 +1764,105 @@
   // ===== State machine SVG =====
   function renderStateMachine(m, container) {
     const sm = m.stateMachine;
-    const W = 720, H = 260;
+    // Scale Y to give labels more breathing room between rows
+    // Original layout uses y:60 / y:180 (gap 120) — scale to 60 / 240 (gap 180)
+    const yScale = 1.35;
+    const baseY = 60;
+    const states = sm.states.map(s => ({ ...s, y: baseY + (s.y - baseY) * yScale }));
+    const W = 800, H = baseY + (260 - baseY) * yScale;
 
-    // Build edges with curves
-    const edgesSvg = sm.edges.map(e => {
-      const fromS = sm.states.find(s => s.id === e.from);
-      const toS = sm.states.find(s => s.id === e.to);
+    // Build edges with curves and offset labels
+    // State node radii: rx=62, ry=22
+    const RX = 62, RY = 22;
+
+    // Calculate a point on the ellipse perimeter along a direction vector
+    function ellipseEdgePoint(cx, cy, dx, dy) {
+      const dist = Math.sqrt(dx*dx + dy*dy) || 1;
+      const ux = dx / dist, uy = dy / dist;
+      // Solve for t such that (t*ux/RX)^2 + (t*uy/RY)^2 = 1
+      const t = 1 / Math.sqrt((ux*ux)/(RX*RX) + (uy*uy)/(RY*RY));
+      return { x: cx + ux * t, y: cy + uy * t };
+    }
+
+    const edgesSvg = sm.edges.map((e, idx) => {
+      const fromS = states.find(s => s.id === e.from);
+      const toS = states.find(s => s.id === e.to);
       if (!fromS || !toS) return '';
-      const fx = fromS.x, fy = fromS.y, tx = toS.x, ty = toS.y;
-      // node radius for offset
-      const r = 38;
-      const dx = tx - fx, dy = ty - fy;
-      const dist = Math.sqrt(dx*dx + dy*dy);
-      const ux = dx/dist, uy = dy/dist;
-      const sx = fx + ux*r, sy = fy + uy*r;
-      const ex = tx - ux*r, ey = ty - uy*r;
-      const mx = (sx+ex)/2, my = (sy+ey)/2;
+
+      const dx = toS.x - fromS.x;
+      const dy = toS.y - fromS.y;
+      const isVertical = Math.abs(dy) > Math.abs(dx);
+      const isHorizontal = Math.abs(dx) > Math.abs(dy);
+
+      // Calculate edge endpoints on ellipse perimeter
+      const start = ellipseEdgePoint(fromS.x, fromS.y, dx, dy);
+      const end   = ellipseEdgePoint(toS.x, toS.y, -dx, -dy);
+
+      // Curve control point: perpendicular offset from midline
+      // for diagonals/long edges, curves help avoid label-on-node overlap
+      const mx = (start.x + end.x) / 2;
+      const my = (start.y + end.y) / 2;
+      const len = Math.sqrt(dx*dx + dy*dy) || 1;
+      const px = -dy / len, py = dx / len; // unit perpendicular
+
+      // Curve amount: stronger for vertical/diagonal edges that share nodes
+      let curve = 0;
+      if (isVertical) curve = 50;          // vertical edges: bow further to the side
+      else if (!isHorizontal) curve = 28;  // diagonal: gentle bow
+
+      // Detect long horizontal edges that pass through intermediate nodes on the same row
+      // Typical column spacing is ~160-180px; anything over ~250px likely spans 2+ columns
+      // and would visually pass through sibling nodes if drawn straight
+      const horizontalNodeGap = 180;
+      const isLongHorizontal = isHorizontal && Math.abs(dx) > horizontalNodeGap * 1.5;
+      if (isLongHorizontal) {
+        // Bow strongly perpendicular to the row so the line clears intermediate nodes
+        curve = RY + 30;  // arc above/below the entire node row
+      }
+
+      // Decide bow direction based on edge index parity (alternates so multi-edges don't overlap)
+      // For long horizontal edges in top row, bow up; in bottom row, bow down
+      let dirSign = (idx % 2 === 0) ? 1 : -1;
+      if (isLongHorizontal) {
+        const rowY = fromS.y;
+        // For Q-bezier with px=-dy/len, py=dx/len:
+        // dy=0, dx>0 → px=0, py=1 → positive dirSign pushes label DOWN
+        // We want top-row long edges to bow UP (negative direction) and bottom-row to bow DOWN
+        const isTopRow = rowY < (H + 60) / 2;
+        dirSign = isTopRow ? -1 : 1;
+      }
+      const cpX = mx + px * curve * dirSign;
+      const cpY = my + py * curve * dirSign;
+
+      // Label position
+      let labelX, labelY;
+      if (isHorizontal && curve === 0) {
+        // Short horizontal edge between adjacent nodes — label outside the row
+        labelX = mx;
+        const rowY = fromS.y;
+        const goUp = (rowY < (H + 60) / 2);
+        const offset = RY + 14;
+        labelY = goUp ? (rowY - offset) : (rowY + offset);
+      } else {
+        // Curved edge — sit on the curve apex, nudge perpendicular further
+        labelX = (start.x + 2*cpX + end.x) / 4;
+        labelY = (start.y + 2*cpY + end.y) / 4;
+        labelX += px * dirSign * 14;
+        labelY += py * dirSign * 14;
+      }
+
       const isActive = e.from === sm.currentState || e.to === sm.currentState;
+      const pathD = curve === 0
+        ? `M${start.x} ${start.y} L${end.x} ${end.y}`
+        : `M${start.x} ${start.y} Q${cpX} ${cpY} ${end.x} ${end.y}`;
+
       return `
-        <path class="sm-arrow ${isActive ? 'active' : ''}" d="M${sx} ${sy} L${ex} ${ey}" />
-        <text class="sm-arrow-label" x="${mx}" y="${my-4}" text-anchor="middle">${e.label}</text>
+        <path class="sm-arrow ${isActive ? 'active' : ''}" d="${pathD}" />
+        <text class="sm-arrow-label ${isActive ? 'active' : ''}" x="${labelX}" y="${labelY}" text-anchor="middle" dominant-baseline="middle">${e.label}</text>
       `;
     }).join('');
 
-    const statesSvg = sm.states.map(s => {
+    const statesSvg = states.map(s => {
       const isCurrent = s.id === sm.currentState;
       const cls = isCurrent ? 'active' : (s.type || '');
       return `
@@ -1728,7 +1875,7 @@
 
     container.innerHTML = `
       <div class="sm-wrapper">
-        <svg class="sm-svg" viewBox="-20 0 ${W+40} ${H+40}" xmlns="http://www.w3.org/2000/svg">
+        <svg class="sm-svg" viewBox="-20 -50 ${W+40} ${H+100}" xmlns="http://www.w3.org/2000/svg">
           <defs>
             <marker id="smarrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
               <path d="M 0 0 L 10 5 L 0 10 z" fill="var(--ink-mute)"/>
@@ -1914,13 +2061,18 @@
       ['OK',   'MonetaGo de-dup check: unique hash'],
       ['INFO', 'OCR extraction completed, 12 fields parsed'],
       ['WARN', 'Duplicate invoice detected — rejecting'],
-      ['OK',   'FU created and queued for buyer acceptance']
+      ['OK',   'FU created and queued for buyer confirmation'],
+      ['INFO', 'Buyer notified: FU pending unconditional confirmation'],
+      ['OK',   'Buyer confirmed FU — broadcasting to financiers'],
+      ['WARN', 'Buyer confirmation SLA breached — auto-expired']
     ],
     'm3-auction': [
       ['OK',   'Bid placed by financier_id=BNK_007'],
+      ['OK',   'NCGTC eligibility: COVERED @ 75% for buyer_id=CPSE_142'],
       ['INFO', 'Auction window closing in 15 min'],
       ['OK',   'Seller accepted winning bid @ 8.42% rate'],
       ['INFO', 'Secondary market transfer initiated'],
+      ['WARN', 'CGTMSE coverage exhausted for sector=textiles'],
       ['WARN', 'Bid rejected — exceeds financier sector limit']
     ],
     'm4-settlement': [
@@ -2122,14 +2274,204 @@
       const el = document.querySelector(`.mod[data-id="${connId}"]`);
       if (el) el.classList.add('flow-on');
     });
+    drawConnections(id);
     renderInspector(id);
     inspector.scrollIntoView({behavior:'smooth', block:'nearest'});
   }
+
+  // Draw SVG connection arrows from selected module to each connected module.
+  // Recomputes positions every call (and on resize/scroll) using DOM rects.
+  function drawConnections(sourceId) {
+    const overlay = document.getElementById('connOverlay');
+    const canvas = document.querySelector('.canvas');
+    if (!overlay || !canvas) return;
+
+    const cRect = canvas.getBoundingClientRect();
+    overlay.setAttribute('viewBox', `0 0 ${cRect.width} ${cRect.height}`);
+    Array.from(overlay.querySelectorAll('.conn-line, .conn-label')).forEach(n => n.remove());
+
+    const connections = FLOW_MAP[sourceId] || [];
+    if (connections.length === 0) return;
+
+    const sourceEl = document.querySelector(`.mod[data-id="${sourceId}"]`);
+    if (!sourceEl) return;
+    const sRect = sourceEl.getBoundingClientRect();
+    const sCx = sRect.left - cRect.left + sRect.width / 2;
+    const sCy = sRect.top  - cRect.top  + sRect.height / 2;
+    const sHalfW = sRect.width / 2, sHalfH = sRect.height / 2;
+
+    // ===== Step 1: Classify each connection =====
+    const routes = connections.map(targetId => {
+      const tEl = document.querySelector(`.mod[data-id="${targetId}"]`);
+      if (!tEl) return null;
+      const tRect = tEl.getBoundingClientRect();
+      const tCx = tRect.left - cRect.left + tRect.width / 2;
+      const tCy = tRect.top  - cRect.top  + tRect.height / 2;
+      const tHalfW = tRect.width / 2, tHalfH = tRect.height / 2;
+
+      const dx = tCx - sCx;
+      const dy = tCy - sCy;
+      const sameRow = Math.abs(dy) < Math.max(sHalfH, tHalfH) * 0.8;
+      const adjacent = Math.abs(dx) < (sHalfW + tHalfW) * 1.6 && Math.abs(dy) < (sHalfH + tHalfH) * 1.6;
+
+      let kind, sSide, tSide;
+
+      if (sameRow && adjacent) {
+        // Adjacent same-row: bottom-to-bottom dip arc
+        // (per L1.A↔L1.B requirement: from bottom not sideways)
+        kind = 'sameRowAdjDip';
+        sSide = 'bottom';
+        tSide = 'bottom';
+      } else if (sameRow) {
+        // Far same-row: arc over (top half) or under (bottom half)
+        const inTopHalf = sCy < cRect.height / 2;
+        kind = inTopHalf ? 'sameRowArcUp' : 'sameRowArcDown';
+        sSide = inTopHalf ? 'top' : 'bottom';
+        tSide = inTopHalf ? 'top' : 'bottom';
+      } else if (Math.abs(dy) > Math.abs(dx) * 0.6) {
+        // Vertical-dominant cross-row
+        kind = 'vertical';
+        sSide = dy > 0 ? 'bottom' : 'top';
+        tSide = dy > 0 ? 'top' : 'bottom';
+      } else {
+        // Diagonal cross-row
+        kind = 'diagonal';
+        sSide = dy > 0 ? 'bottom' : 'top';
+        tSide = dy > 0 ? 'top' : 'bottom';
+      }
+
+      return { targetId, tRect, tCx, tCy, tHalfW, tHalfH, dx, dy, kind, sSide, tSide };
+    }).filter(Boolean);
+
+    // ===== Step 2: Distribute multiple anchors on the same source side =====
+    const sideGroups = { top: [], bottom: [], left: [], right: [] };
+    routes.forEach(r => sideGroups[r.sSide].push(r));
+    Object.keys(sideGroups).forEach(side => {
+      const isHorizSide = (side === 'top' || side === 'bottom');
+      sideGroups[side].sort((a, b) => isHorizSide ? a.tCx - b.tCx : a.tCy - b.tCy);
+      const n = sideGroups[side].length;
+      sideGroups[side].forEach((r, i) => {
+        const t = n === 1 ? 0.5 : (i / (n - 1));
+        r.sAnchorT = 0.2 + t * 0.6;
+      });
+    });
+
+    // ===== Step 3: Distribute anchors on target side too (target may have multiple incoming) =====
+    // Within this source's connections, group targets by tSide and stagger the target anchor
+    routes.forEach(r => { r.tAnchorT = 0.5; });
+    const targetSideGroups = { top: [], bottom: [], left: [], right: [] };
+    routes.forEach(r => targetSideGroups[r.tSide].push(r));
+    Object.keys(targetSideGroups).forEach(side => {
+      // Group routes by target element so two routes hitting the same target don't stack
+      // (typically only one per target — but we stagger by source position anyway)
+      const arr = targetSideGroups[side];
+      const isHorizSide = (side === 'top' || side === 'bottom');
+      arr.sort((a, b) => isHorizSide ? a.dx - b.dx : a.dy - b.dy);
+    });
+
+    // ===== Step 4: Build paths =====
+    routes.forEach(r => {
+      const sAnchor = anchorPoint(sCx, sCy, sHalfW, sHalfH, r.sSide, r.sAnchorT);
+      const tAnchor = anchorPoint(r.tCx, r.tCy, r.tHalfW, r.tHalfH, r.tSide, r.tAnchorT);
+      const sx = sAnchor.x, sy = sAnchor.y;
+      const tx = tAnchor.x, ty = tAnchor.y;
+
+      let pathD;
+
+      if (r.kind === 'sameRowAdjDip') {
+        // Bottom-to-bottom dip arc
+        const dipDepth = 36;
+        const dipY = Math.max(sy, ty) + dipDepth;
+        const cp1x = sx, cp1y = dipY;
+        const cp2x = tx, cp2y = dipY;
+        pathD = `M${sx} ${sy} C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${tx} ${ty}`;
+      }
+      else if (r.kind === 'sameRowArcUp') {
+        const horizDist = Math.abs(tx - sx);
+        // Available space above source for arc
+        const availableUp = sy - 4;  // 4px breathing from canvas top
+        const desiredArc = Math.min(110, 50 + horizDist * 0.18);
+        const arcHeight = Math.min(desiredArc, availableUp);
+        const apexY = Math.min(sy, ty) - arcHeight;
+        const cp1x = sx + (tx - sx) * 0.25;
+        const cp1y = apexY;
+        const cp2x = sx + (tx - sx) * 0.75;
+        const cp2y = apexY;
+        pathD = `M${sx} ${sy} C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${tx} ${ty}`;
+      }
+      else if (r.kind === 'sameRowArcDown') {
+        const horizDist = Math.abs(tx - sx);
+        const arcHeight = Math.min(110, 50 + horizDist * 0.18);
+        const maxApexY = cRect.height - 8;
+        const apexY = Math.min(maxApexY, Math.max(sy, ty) + arcHeight);
+        const cp1x = sx + (tx - sx) * 0.25;
+        const cp1y = apexY;
+        const cp2x = sx + (tx - sx) * 0.75;
+        const cp2y = apexY;
+        pathD = `M${sx} ${sy} C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${tx} ${ty}`;
+      }
+      else if (r.kind === 'vertical') {
+        // Cross-row vertical: if multiple verticals from same source, gentle S to differentiate
+        // Otherwise nearly straight is fine
+        const verticalSpan = Math.abs(ty - sy);
+        const horizontalShift = Math.abs(tx - sx);
+        // Only add S-curve if multiple connections from this side
+        const isCrowded = sideGroups[r.sSide].length > 1;
+        if (isCrowded || horizontalShift < 30) {
+          // Slight S-curve: control points pulled sideways near each endpoint
+          const sShift = (sCx > r.tCx ? -1 : 1) * Math.min(40, verticalSpan * 0.15);
+          const cp1x = sx + sShift, cp1y = sy + (ty - sy) * 0.35;
+          const cp2x = tx - sShift, cp2y = sy + (ty - sy) * 0.65;
+          pathD = `M${sx} ${sy} C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${tx} ${ty}`;
+        } else {
+          const cp1x = sx, cp1y = sy + (ty - sy) * 0.45;
+          const cp2x = tx, cp2y = sy + (ty - sy) * 0.55;
+          pathD = `M${sx} ${sy} C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${tx} ${ty}`;
+        }
+      }
+      else {
+        // Diagonal cross-row — gentle but visible S-curve
+        const cp1x = sx, cp1y = sy + (ty - sy) * 0.6;
+        const cp2x = tx, cp2y = sy + (ty - sy) * 0.4;
+        pathD = `M${sx} ${sy} C${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${tx} ${ty}`;
+      }
+
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      path.setAttribute('class', 'conn-line glow');
+      path.setAttribute('d', pathD);
+      overlay.appendChild(path);
+    });
+  }
+
+  // Compute anchor point on a given side of a card (t parameterizes side position 0..1)
+  function anchorPoint(cx, cy, halfW, halfH, side, t) {
+    const lerp = (a, b, t) => a + (b - a) * t;
+    if (side === 'top')    return { x: lerp(cx - halfW, cx + halfW, t), y: cy - halfH };
+    if (side === 'bottom') return { x: lerp(cx - halfW, cx + halfW, t), y: cy + halfH };
+    if (side === 'left')   return { x: cx - halfW, y: lerp(cy - halfH, cy + halfH, t) };
+    if (side === 'right')  return { x: cx + halfW, y: lerp(cy - halfH, cy + halfH, t) };
+    return { x: cx, y: cy };
+  }
+
+  // Redraw connections on window resize/scroll so they track card movement
+  let drawDebounce;
+  function scheduleRedraw() {
+    if (!activeModuleId) return;
+    clearTimeout(drawDebounce);
+    drawDebounce = setTimeout(() => drawConnections(activeModuleId), 80);
+  }
+  window.addEventListener('resize', scheduleRedraw);
+  window.addEventListener('scroll', scheduleRedraw, { passive: true });
 
   function resetSelection() {
     activeModuleId = null;
     allMods.forEach(el => el.classList.remove('active','flow-on'));
     document.body.classList.remove('flow-active');
+    // Clear connection arrows
+    const overlay = document.getElementById('connOverlay');
+    if (overlay) {
+      Array.from(overlay.querySelectorAll('.conn-line, .conn-label')).forEach(n => n.remove());
+    }
     inspector.innerHTML = `
       <div class="insp-empty">
         <div class="ring">
@@ -2166,6 +2508,10 @@
         if (view === 'all') layer.style.display = '';
         else if (view === 'business') layer.style.display = layer.classList.contains('l2') ? '' : 'none';
       });
+      // Layout shifted — redraw connection arrows for active selection
+      if (activeModuleId) {
+        setTimeout(() => drawConnections(activeModuleId), 50);
+      }
     });
   });
 </script>
