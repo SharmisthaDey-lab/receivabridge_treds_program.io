@@ -112,7 +112,11 @@
     background:#fff; border:1px solid var(--line); border-radius:18px;
     box-shadow:var(--shadow-md); overflow:hidden;
   }
-  .gantt-scroll{overflow-x:auto; position:relative}
+  .gantt-scroll{
+    overflow:auto;
+    position:relative;
+    max-height: calc(100vh - 60px);
+  }
   .gantt-inner{
     position:relative;
     min-width: calc(var(--label-col-width) + var(--month-width) * 19);
