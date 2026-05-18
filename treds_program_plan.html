@@ -1,0 +1,1101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>BlackSalt CrediBridge — TReDS Platform Program Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=JetBrains+Mono:wght@400;500;600;700&family=Inter+Tight:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg: #f6f5f1;
+    --ink: #14181f;
+    --ink-soft: #4a5260;
+    --ink-mute: #7a8294;
+    --line: #d8d5cb;
+    --line-strong: #b9b4a3;
+
+    --t-legal: #be185d;   --t-legal-bg: #fce7f0;
+    --t-ext:   #7c3aed;   --t-ext-bg:   #f0e9fb;
+    --t-eng:   #2563eb;   --t-eng-bg:   #eaf1ff;
+    --t-infra: #0891b2;   --t-infra-bg: #e0f3f7;
+    --t-sec:   #b45309;   --t-sec-bg:   #fbf2dc;
+    --t-ops:   #15803d;   --t-ops-bg:   #e8f4ec;
+
+    --critical: #c2410c;
+    --critical-bg: #fff1e6;
+    --milestone: #14181f;
+
+    --shadow-sm: 0 1px 0 rgba(20,24,31,.04), 0 1px 2px rgba(20,24,31,.04);
+    --shadow-md: 0 2px 4px rgba(20,24,31,.04), 0 8px 24px rgba(20,24,31,.06);
+
+    --label-col-width: 320px;
+    --month-width: 70px;
+    --bar-height: 24px;
+    --row-height: 36px;
+
+    /* Heights of sticky header rows (for cascading top offsets) */
+    --h-month: 46px;
+    --h-phase: 36px;
+  }
+
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:'Inter Tight', system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 10% -10%, #fff8e7 0%, transparent 60%),
+      radial-gradient(900px 500px at 100% 0%, #e9efff 0%, transparent 55%),
+      var(--bg);
+    color:var(--ink);
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.45;
+  }
+
+  .wrap{max-width:1700px; margin:0 auto; padding:36px 32px 80px}
+
+  .hdr{
+    display:flex; align-items:flex-end; justify-content:space-between;
+    gap:32px; border-bottom:1px solid var(--line); padding-bottom:24px; margin-bottom:24px;
+  }
+  .hdr-left .eyebrow{
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:.18em;
+    text-transform:uppercase; color:var(--ink-soft); margin-bottom:10px;
+  }
+  .hdr-left h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:42px;
+    line-height:1.05; letter-spacing:-0.02em; margin:0 0 8px;
+  }
+  .hdr-left h1 em{font-style:italic; font-weight:400; color:var(--ink-soft)}
+  .hdr-left .sub{font-size:14px; color:var(--ink-soft); max-width:720px}
+
+  .legend-pills{display:flex; flex-wrap:wrap; gap:8px; justify-content:flex-end; max-width:540px}
+  .pill{
+    display:inline-flex; align-items:center; gap:6px;
+    padding:5px 10px; background:#fff; border:1px solid var(--line); border-radius:999px;
+    font-size:11px; font-family:'JetBrains Mono', monospace; letter-spacing:.04em; color:var(--ink-soft);
+  }
+  .dot{width:8px; height:8px; border-radius:50%}
+  .pill.t-legal .dot{background:var(--t-legal)}
+  .pill.t-ext .dot{background:var(--t-ext)}
+  .pill.t-eng .dot{background:var(--t-eng)}
+  .pill.t-infra .dot{background:var(--t-infra)}
+  .pill.t-sec .dot{background:var(--t-sec)}
+  .pill.t-ops .dot{background:var(--t-ops)}
+  .pill.cr .dot{background:var(--critical)}
+  .pill.ms .dot{background:var(--milestone)}
+
+  .toolbar{
+    display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    background:#fff; border:1px solid var(--line); border-radius:14px;
+    padding:10px 14px; box-shadow:var(--shadow-sm); margin-bottom:18px;
+  }
+  .toolbar .label{
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    letter-spacing:.12em; text-transform:uppercase; color:var(--ink-soft); margin-right:6px;
+  }
+  .btn{
+    appearance:none; border:1px solid var(--line); background:#fff; border-radius:8px;
+    padding:7px 12px; font-family:'Inter Tight', sans-serif; font-size:13px; font-weight:500;
+    color:var(--ink); cursor:pointer; transition:all .15s ease; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--ink); transform:translateY(-1px)}
+  .btn.active{background:var(--ink); color:#fff; border-color:var(--ink)}
+  .btn.danger.active{background:var(--critical); border-color:var(--critical)}
+  .btn.deps.active{background:var(--t-eng); border-color:var(--t-eng)}
+  .toolbar .spacer{flex:1}
+  .toolbar .hint{font-size:12px; color:var(--ink-soft); font-style:italic}
+
+  .gantt{
+    background:#fff; border:1px solid var(--line); border-radius:18px;
+    box-shadow:var(--shadow-md); overflow:hidden;
+  }
+  .gantt-scroll{overflow-x:auto; position:relative}
+  .gantt-inner{
+    position:relative;
+    min-width: calc(var(--label-col-width) + var(--month-width) * 19);
+  }
+
+  .month-header{
+    display:grid;
+    grid-template-columns: var(--label-col-width) repeat(19, var(--month-width));
+    background:#fafaf6;
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+  }
+  .month-header .label-cell{
+    padding:14px 16px;
+    border-right:1px solid var(--line);
+    background:#fafaf6;
+    position:sticky; left:0; z-index:21;
+  }
+  .month-header .label-cell .ttl{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);
+  }
+  .month-cell{
+    padding:8px 6px; text-align:center;
+    border-right:1px solid var(--line);
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px; font-weight:500; color:var(--ink);
+  }
+  .month-cell .yr{display:block; font-size:9px; color:var(--ink-soft); font-weight:400; letter-spacing:.06em}
+  .month-cell.q-boundary{border-right:1px solid var(--line-strong)}
+  .month-cell.year-boundary{border-right:2px solid var(--ink)}
+
+  .phase-ribbons{
+    display:grid;
+    grid-template-columns: var(--label-col-width) 1fr;
+    background:#fff;
+    border-bottom:2px solid var(--line-strong);
+    position:sticky; top:var(--h-month); z-index:18;
+  }
+  .phase-ribbons .label-cell{
+    padding:10px 16px;
+    border-right:1px solid var(--line);
+    background:#fff;
+    position:sticky; left:0; z-index:16;
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);
+  }
+  .phase-ribbons-lane{position:relative; height:30px}
+  .phase-ribbon{
+    position:absolute; top:5px; bottom:5px;
+    border-radius:6px;
+    padding:0 12px;
+    display:flex; align-items:center; gap:6px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; font-weight:700;
+    letter-spacing:.06em; text-transform:uppercase;
+    color:#fff; background: rgba(20,24,31,.85);
+  }
+  .phase-ribbon .num{
+    background:#fff; color:var(--ink);
+    width:16px; height:16px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:9px; font-weight:700;
+  }
+
+  .ms-row{
+    display:grid;
+    grid-template-columns: var(--label-col-width) 1fr;
+    background:#fafaf6;
+    border-bottom:2px solid var(--line-strong);
+    position:sticky; top:calc(var(--h-month) + var(--h-phase)); z-index:17;
+  }
+  .ms-row .label-cell{
+    padding:14px 16px;
+    border-right:1px solid var(--line);
+    background:#fafaf6;
+    position:sticky; left:0; z-index:15;
+    display:flex; align-items:center; gap:8px;
+  }
+  .ms-row .module-tag{
+    font-family:'JetBrains Mono', monospace; font-size:9.5px;
+    background:var(--ink); color:#fff;
+    padding:2px 6px; border-radius:3px; letter-spacing:.06em; font-weight:600;
+  }
+  .ms-row .lbl{font-size:13px; font-weight:500}
+  .ms-lane{position:relative; height:60px; overflow:visible}
+  .milestone{
+    position:absolute; top:50%;
+    transform:translate(-50%, -50%) rotate(45deg);
+    width:14px; height:14px;
+    background: var(--milestone);
+    border:2px solid #fff;
+    box-shadow: 0 0 0 1.5px var(--milestone);
+    z-index:5; cursor:pointer;
+  }
+  .milestone:hover{
+    background: var(--critical);
+    box-shadow: 0 0 0 1.5px var(--critical), 0 0 8px rgba(194,65,12,.4);
+  }
+  .milestone-label{
+    position:absolute;
+    transform: translateX(-50%);
+    font-family:'JetBrains Mono', monospace;
+    font-size:9.5px; font-weight:600;
+    letter-spacing:.04em;
+    color:var(--milestone);
+    white-space:nowrap;
+    background:#fff;
+    padding:2px 6px;
+    border:1px solid var(--milestone);
+    border-radius:4px;
+    pointer-events:auto;
+    z-index:6;
+    cursor:pointer;
+  }
+  .today-line{
+    position:absolute; top:0; bottom:0;
+    width:2px; background: var(--critical);
+    z-index:7; pointer-events:none;
+  }
+  .today-line::before{
+    content:'JUN 2026 START';
+    position:absolute; top:-22px; left:50%;
+    transform:translateX(-50%);
+    font-family:'JetBrains Mono', monospace;
+    font-size:9px; font-weight:700;
+    color:#fff; background:var(--critical);
+    padding:3px 8px; border-radius:4px;
+    letter-spacing:.06em; white-space:nowrap;
+  }
+
+  .track{border-bottom:1px solid var(--line)}
+  .track:last-child{border-bottom:none}
+  .track-header{
+    display:grid;
+    grid-template-columns: var(--label-col-width) 1fr;
+    background:#fff;
+    border-bottom:1px dashed var(--line);
+    align-items:center;
+  }
+  .track-title{
+    padding:14px 16px;
+    border-right:1px solid var(--line);
+    display:flex; align-items:center; gap:10px;
+    position:sticky; left:0; z-index:5; background:#fff;
+  }
+  .track-icon{
+    width:28px; height:28px; border-radius:6px;
+    display:inline-flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .track.t-legal .track-icon{background:var(--t-legal-bg); color:var(--t-legal)}
+  .track.t-ext   .track-icon{background:var(--t-ext-bg); color:var(--t-ext)}
+  .track.t-eng   .track-icon{background:var(--t-eng-bg); color:var(--t-eng)}
+  .track.t-infra .track-icon{background:var(--t-infra-bg); color:var(--t-infra)}
+  .track.t-sec   .track-icon{background:var(--t-sec-bg); color:var(--t-sec)}
+  .track.t-ops   .track-icon{background:var(--t-ops-bg); color:var(--t-ops)}
+  .track-icon svg{width:14px; height:14px; stroke:currentColor; fill:none; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round}
+  .track-name{
+    font-family:'Fraunces', serif; font-size:15px; font-weight:600;
+    line-height:1.15; letter-spacing:-0.01em;
+  }
+  .track-name .sub{
+    display:block;
+    font-family:'JetBrains Mono', monospace;
+    font-size:9px; color:var(--ink-soft);
+    font-weight:400; letter-spacing:.08em; margin-top:1px;
+  }
+  .track-count{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px; color:var(--ink-soft);
+    padding:12px 14px;
+  }
+
+  .task-row{
+    display:grid;
+    grid-template-columns: var(--label-col-width) 1fr;
+    border-bottom:1px solid var(--line);
+    min-height: var(--row-height);
+    align-items:center;
+    position:relative;
+  }
+  .task-row:last-child{border-bottom:none}
+  .task-row:hover{background:#fafaf6}
+  .task-label{
+    padding:6px 14px 6px 50px;
+    border-right:1px solid var(--line);
+    font-size:12.5px; font-weight:500; color:var(--ink);
+    position:sticky; left:0; z-index:4; background:#fff;
+    display:flex; align-items:center; gap:8px;
+  }
+  .task-row:hover .task-label{background:#fafaf6}
+  .task-label .module-tag{
+    font-family:'JetBrains Mono', monospace; font-size:9px;
+    background:#f1f3f5; color:var(--ink-soft);
+    padding:1px 5px; border-radius:3px; letter-spacing:.04em; font-weight:600;
+    flex-shrink:0;
+  }
+  .task-label .module-tag.critical{background:var(--critical-bg); color:var(--critical)}
+  .task-lane{
+    position:relative;
+    height:var(--row-height);
+    background-image:
+      repeating-linear-gradient(
+        to right,
+        transparent 0,
+        transparent calc(var(--month-width) - 1px),
+        rgba(20,24,31,.06) calc(var(--month-width) - 1px),
+        rgba(20,24,31,.06) var(--month-width)
+      );
+  }
+
+  .bar{
+    position:absolute;
+    top:50%; transform:translateY(-50%);
+    height: var(--bar-height);
+    border-radius:5px;
+    padding:0 10px;
+    display:flex; align-items:center;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; font-weight:600;
+    letter-spacing:.03em;
+    color:#fff;
+    cursor:pointer;
+    box-shadow: 0 1px 2px rgba(20,24,31,.15), 0 2px 6px rgba(20,24,31,.08);
+    transition: transform .12s ease, box-shadow .12s ease;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    z-index: 2;
+  }
+  .bar:hover{
+    transform:translateY(-50%) scale(1.02);
+    box-shadow: 0 2px 4px rgba(20,24,31,.20), 0 6px 14px rgba(20,24,31,.12);
+    z-index:3;
+  }
+  .bar.t-legal{background:var(--t-legal)}
+  .bar.t-ext  {background:var(--t-ext)}
+  .bar.t-eng  {background:var(--t-eng)}
+  .bar.t-infra{background:var(--t-infra)}
+  .bar.t-sec  {background:var(--t-sec)}
+  .bar.t-ops  {background:var(--t-ops)}
+
+  .bar.critical{
+    box-shadow: 0 0 0 1.5px var(--critical), 0 1px 2px rgba(194,65,12,.25), 0 2px 6px rgba(194,65,12,.15);
+  }
+  .bar.critical::after{
+    content:'!';
+    margin-left:6px;
+    font-family:'Fraunces', serif;
+    font-weight:700; color: #fff; background: var(--critical);
+    width:13px; height:13px;
+    border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center;
+    font-size:9px; flex-shrink:0;
+  }
+  body.show-critical .bar:not(.critical){opacity:.30}
+
+  body.flow-active .bar:not(.flow-on):not(.flow-source){opacity:.25}
+  .bar.flow-source{
+    box-shadow: 0 0 0 2px var(--ink), 0 4px 12px rgba(20,24,31,.25) !important;
+    transform:translateY(-50%) scale(1.04);
+  }
+
+  .detail-panel{
+    margin-top:20px;
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:14px;
+    padding:22px 26px;
+    box-shadow:var(--shadow-md);
+    min-height:140px;
+  }
+  .detail-empty{color:var(--ink-soft); font-size:13px; text-align:center; padding:24px 16px}
+  .detail-empty strong{color:var(--ink); font-weight:600}
+  .detail-head{
+    display:flex; justify-content:space-between; align-items:flex-start;
+    gap:20px; padding-bottom:14px; margin-bottom:14px;
+    border-bottom:1px solid var(--line);
+  }
+  .detail-title{
+    font-family:'Fraunces', serif; font-size:22px; font-weight:600;
+    letter-spacing:-0.02em; margin:0 0 4px;
+  }
+  .detail-meta{
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    color:var(--ink-soft); letter-spacing:.04em;
+  }
+  .detail-badges{display:flex; gap:6px; flex-shrink:0; flex-wrap:wrap; justify-content:flex-end}
+  .badge{
+    display:inline-flex; align-items:center; gap:5px;
+    padding:4px 9px; border-radius:5px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:10px; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase;
+  }
+  .badge.crit{background:var(--critical-bg); color:var(--critical)}
+  .badge.std{background:#f1f3f5; color:var(--ink-soft)}
+  .badge.track-t-legal{background:var(--t-legal-bg); color:var(--t-legal)}
+  .badge.track-t-ext{background:var(--t-ext-bg); color:var(--t-ext)}
+  .badge.track-t-eng{background:var(--t-eng-bg); color:var(--t-eng)}
+  .badge.track-t-infra{background:var(--t-infra-bg); color:var(--t-infra)}
+  .badge.track-t-sec{background:var(--t-sec-bg); color:var(--t-sec)}
+  .badge.track-t-ops{background:var(--t-ops-bg); color:var(--t-ops)}
+
+  .detail-grid{display:grid; grid-template-columns: 1fr 1fr; gap:24px}
+  @media (max-width:900px){.detail-grid{grid-template-columns:1fr}}
+  .detail-section h4{
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    letter-spacing:.14em; text-transform:uppercase; color:var(--ink-soft);
+    margin:0 0 10px; font-weight:600;
+  }
+  .detail-section ul{list-style:none; padding:0; margin:0}
+  .detail-section li{
+    font-size:12.5px; color:var(--ink);
+    padding:6px 0 6px 18px; position:relative;
+    border-bottom:1px solid var(--line);
+    line-height:1.45;
+  }
+  .detail-section li:last-child{border-bottom:none}
+  .detail-section li::before{
+    content:''; position:absolute; left:0; top:13px;
+    width:8px; height:1px; background:var(--ink-soft);
+  }
+  .dep-chip{
+    display:inline-flex; align-items:center; gap:4px;
+    font-family:'JetBrains Mono', monospace; font-size:10px;
+    background:#f6f5f1; border:1px solid var(--line);
+    padding:2px 7px; border-radius:4px; margin-right:4px;
+    color:var(--ink); cursor:pointer; margin-bottom:4px;
+  }
+  .dep-chip:hover{border-color:var(--ink); background:#fff}
+  .dep-chip.crit{background:var(--critical-bg); color:var(--critical); border-color:var(--critical)}
+
+  .footer{margin-top:20px; display:grid; grid-template-columns: repeat(3, 1fr); gap:14px}
+  @media (max-width:900px){.footer{grid-template-columns:1fr}}
+  .fnote{
+    background:#fff; border:1px solid var(--line); border-radius:10px;
+    padding:14px; font-size:12px; color:var(--ink-soft); line-height:1.5;
+  }
+  .fnote strong{
+    color:var(--ink); font-weight:600; display:block; margin-bottom:4px;
+    font-family:'Fraunces', serif; font-size:14px;
+  }
+
+  @media (max-width:1100px){
+    .hdr{flex-direction:column; align-items:flex-start}
+    .legend-pills{justify-content:flex-start}
+  }
+  @media (max-width:680px){
+    .hdr-left h1{font-size:30px}
+    .wrap{padding:20px 16px 60px}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hdr">
+    <div class="hdr-left">
+      <div class="eyebrow">BlackSalt CrediBridge — Parallel Execution Roadmap</div>
+      <h1>TReDS Platform <em>Program Plan</em></h1>
+      <p class="sub">Six parallel workstream tracks (Legal · External Integrations · Engineering · Infra · Security · Operations) running concurrently from Jun 2026, with explicit dependency arrows showing what blocks what. Phase ribbons sit above as a reference, not as gates.</p>
+    </div>
+    <div class="legend-pills">
+      <span class="pill t-legal"><span class="dot"></span>Legal / Regulatory</span>
+      <span class="pill t-ext"><span class="dot"></span>External Integrations</span>
+      <span class="pill t-eng"><span class="dot"></span>Engineering (Modules)</span>
+      <span class="pill t-infra"><span class="dot"></span>Platform / Infra</span>
+      <span class="pill t-sec"><span class="dot"></span>Security &amp; Audit</span>
+      <span class="pill t-ops"><span class="dot"></span>Operations / Pilot</span>
+      <span class="pill cr"><span class="dot"></span>Critical Path</span>
+      <span class="pill ms"><span class="dot"></span>Milestone</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <span class="label">View</span>
+    <button class="btn active" data-filter="all">All Tracks</button>
+    <button class="btn" data-filter="critical">Critical Path</button>
+    <button class="btn danger" id="critToggle">Highlight Critical</button>
+    <button class="btn" id="resetBtn">Reset</button>
+    <span class="spacer"></span>
+    <span class="hint">Click a bar → see scope &amp; full dependency chain</span>
+  </div>
+
+  <div class="gantt">
+    <div class="gantt-scroll" id="ganttScroll">
+      <div class="gantt-inner" id="ganttInner">
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-panel" id="detailPanel">
+    <div class="detail-empty">
+      <strong>Click any workstream bar</strong> to see scope, deliverables, what it depends on, and what depends on it. The dependency chain is highlighted on the Gantt by dimming unrelated bars.
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="fnote">
+      <strong>Genuine parallelism</strong>
+      All six tracks start Day 1 (Jun 2026). External integrations chase long lead times in parallel with engineering. Legal and infra run concurrently. Only explicit dependencies cause downstream gating.
+    </div>
+    <div class="fnote">
+      <strong>Dependency tracing</strong>
+      Click any task → the detail panel lists its prerequisites and what it blocks. Each dependency chip is clickable to jump. On the Gantt, the full ancestor + descendant chain stays highlighted while unrelated bars dim.
+    </div>
+    <div class="fnote">
+      <strong>Phase ribbons</strong>
+      Phases (0–5) shown at top as reference markers for milestone communication, not blocking gates. Engineering builds toward each phase exit but doesn't wait for the prior phase.
+    </div>
+  </div>
+
+</div>
+
+<script>
+  const MONTHS = [
+    {m:'Jun', y:26}, {m:'Jul', y:26}, {m:'Aug', y:26},
+    {m:'Sep', y:26}, {m:'Oct', y:26}, {m:'Nov', y:26}, {m:'Dec', y:26},
+    {m:'Jan', y:27}, {m:'Feb', y:27}, {m:'Mar', y:27},
+    {m:'Apr', y:27}, {m:'May', y:27}, {m:'Jun', y:27},
+    {m:'Jul', y:27}, {m:'Aug', y:27}, {m:'Sep', y:27},
+    {m:'Oct', y:27}, {m:'Nov', y:27}, {m:'Dec', y:27}
+  ];
+  function mIdx(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    return (y - 2026) * 12 + (m - 6);
+  }
+
+  const PHASES = [
+    {num:0, name:'Foundation',         start:'2026-06', end:'2026-08'},
+    {num:1, name:'Core MVP',           start:'2026-09', end:'2026-12'},
+    {num:2, name:'Financial Loop',     start:'2027-01', end:'2027-04'},
+    {num:3, name:'Resilience',         start:'2027-05', end:'2027-07'},
+    {num:4, name:'Limited Production', start:'2027-08', end:'2027-10'},
+    {num:5, name:'Public Launch',      start:'2027-11', end:'2027-12'},
+  ];
+
+  const MILESTONES = [
+    {id:'ms-formA',   label:'Form A submitted',    date:'2026-08',
+     desc:'RBI Form A submitted to RBI DPSS. Triggers in-principle review cycle.'},
+    {id:'ms-alpha',   label:'Alpha demo',          date:'2026-12',
+     desc:'End-to-end demo of onboarding + invoice upload + buyer confirmation in sandbox.'},
+    {id:'ms-e2e',     label:'E2E loop working',    date:'2027-04',
+     desc:'First test transaction: upload → bid → settle → CERSAI file (UAT).'},
+    {id:'ms-audit',   label:'IS audit + DR drill', date:'2027-07',
+     desc:'CERT-In IS audit passed + first BCP/DR failover drill. Mandatory for RBI authorisation.'},
+    {id:'ms-inspect', label:'RBI inspection',      date:'2027-09',
+     desc:'RBI pre-authorisation inspection completed and observations responded.'},
+    {id:'ms-auth',    label:'Final authorisation', date:'2027-10',
+     desc:'RBI grants final TReDS authorisation under PSS Act 2007.'},
+    {id:'ms-launch',  label:'Public launch',       date:'2027-11',
+     desc:'Public onboarding opens. Marketing live.'},
+  ];
+
+  const TRACKS = [
+    {
+      id:'t-legal', name:'Legal / Regulatory',
+      sub:'Compliance · RBI filings · policies',
+      icon:`<svg viewBox="0 0 24 24"><path d="M12 3l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V7l8-4z"/></svg>`,
+      tasks:[
+        {id:'L1', label:'Entity incorporation + ₹25cr capitalisation', tag:'LEGAL', start:'2026-06', end:'2026-07', critical:true,
+         desc:'Incorporate company and raise minimum ₹25cr net worth per TReDS Guidelines 2018. MoA/AoA aligned with the activity.',
+         deliverables:['Incorporation cert','₹25cr paid-up capital','MoA/AoA'],
+         deps:[]},
+        {id:'L2', label:'Form A drafting (Part A + B)', tag:'LEGAL', start:'2026-06', end:'2026-08', critical:true,
+         desc:'Draft RBI Form A — the master application for TReDS authorisation. Detailed system architecture annex required.',
+         deliverables:['Form A draft','System architecture annex','Compliance policy bundle'],
+         deps:['L1']},
+        {id:'L3', label:'Form A submission to RBI', tag:'LEGAL', start:'2026-08', end:'2026-08', critical:true,
+         desc:'Formal submission to RBI DPSS. Triggers in-principle review.',
+         deliverables:['RBI acknowledgement of Form A receipt'],
+         deps:['L2']},
+        {id:'L4', label:'Master Agreement + policy bundle', tag:'LEGAL', start:'2026-07', end:'2026-10', critical:false,
+         desc:'4-role Master Agreement, AML/KYC policy, IT policy, BCP policy, grievance redressal policy.',
+         deliverables:['Master Agreement template','5 policy documents'],
+         deps:['L1']},
+        {id:'L5', label:'RBI quarterly check-ins (ongoing)', tag:'LEGAL', start:'2026-09', end:'2027-09', critical:false,
+         desc:'Continuous engagement with RBI through the authorisation process. Status updates and clarifications.',
+         deliverables:['Quarterly status reports','Clarification responses'],
+         deps:['L3']},
+        {id:'L6', label:'RBI inspection preparation', tag:'REG', start:'2027-07', end:'2027-09', critical:true,
+         desc:'Prepare inspection dossier with all evidence (audit reports, compliance documentation, operations logs).',
+         deliverables:['Inspection dossier','RBI walk-through deck'],
+         deps:['S3','O3']},
+        {id:'L7', label:'First quarterly RBI returns', tag:'REG', start:'2027-09', end:'2027-10', critical:false,
+         desc:'First PSS Reg.6(2) quarterly returns submitted while in limited production.',
+         deliverables:['Monthly volume return','Quarterly disputes statement'],
+         deps:['E7','O2']},
+      ]
+    },
+    {
+      id:'t-ext', name:'External Integrations',
+      sub:'GSTN · NACH · CERSAI · MonetaGo',
+      icon:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>`,
+      tasks:[
+        {id:'X1', label:'GSTN sandbox approval', tag:'EXT.B', start:'2026-06', end:'2026-09', critical:true,
+         desc:'8–12 week approval cycle. Longest external lead on the critical path. Start Day 1.',
+         deliverables:['GSTN sandbox credentials','API rate limits agreed'],
+         deps:['L1']},
+        {id:'X2', label:'GSTN production cutover', tag:'EXT.B', start:'2026-12', end:'2027-02', critical:false,
+         desc:'Migrate from sandbox to production GSTN endpoints. Requires platform readiness.',
+         deliverables:['Live GSTN production access'],
+         deps:['X1','E2']},
+        {id:'X3', label:'NACH sponsor bank commercials + H2H', tag:'EXT.A', start:'2026-06', end:'2026-12', critical:true,
+         desc:'6–9 month cycle including commercial negotiation and host-to-host channel setup.',
+         deliverables:['Sponsor bank agreement','Test H2H connection'],
+         deps:['L1']},
+        {id:'X4', label:'NACH production go-live', tag:'EXT.A', start:'2027-01', end:'2027-03', critical:true,
+         desc:'Production NACH file submission live with sponsor bank.',
+         deliverables:['Live NACH credit/debit cycles'],
+         deps:['X3','E4']},
+        {id:'X5', label:'MonetaGo network membership', tag:'EXT.D', start:'2026-06', end:'2026-10', critical:true,
+         desc:'Hyperledger Fabric network membership for inter-TReDS de-duplication.',
+         deliverables:['Network membership','Peer node provisioned'],
+         deps:['L1']},
+        {id:'X6', label:'CERSAI API access (sandbox + prod)', tag:'EXT.C', start:'2026-06', end:'2026-11', critical:true,
+         desc:'4–6 month process. Sandbox available earlier; production credentials in Phase 2.',
+         deliverables:['CERSAI sandbox','CERSAI production credentials'],
+         deps:['L1']},
+        {id:'X7', label:'CERSAI production filings live', tag:'EXT.C', start:'2027-02', end:'2027-04', critical:true,
+         desc:'Auto-filing on settlement live in production. Retry queue handles partner downtime.',
+         deliverables:['Live CERSAI filings'],
+         deps:['X6','E5']},
+        {id:'X8', label:'NCGTC/CGTMSE integration', tag:'EXT.F', start:'2026-10', end:'2027-04', critical:false,
+         desc:'Real-time credit guarantee eligibility API. Used at bid stage for risk decisioning.',
+         deliverables:['NCGTC sandbox + prod','Eligibility check live'],
+         deps:['L1']},
+        {id:'X9', label:'Account Aggregator setup', tag:'EXT.G', start:'2027-04', end:'2027-09', critical:false,
+         desc:'Consent-based MSME bank statement access for AI credit scoring.',
+         deliverables:['AA framework live'],
+         deps:['L1']},
+        {id:'X10', label:'GeM portal integration', tag:'EXT.E', start:'2027-06', end:'2027-11', critical:false,
+         desc:'CPSE invoice flow via GeM (per Union Budget 2026-27).',
+         deliverables:['GeM API live','CPSE onboarding flow'],
+         deps:['L1']},
+        {id:'X11', label:'CERT-In MSSP selection + onboarding', tag:'EXT', start:'2026-06', end:'2026-09', critical:false,
+         desc:'RFP, selection, and contract for 24×7 SOC operation by CERT-In empanelled MSSP.',
+         deliverables:['MSSP contract','Initial SOC integration'],
+         deps:['L1']},
+      ]
+    },
+    {
+      id:'t-eng', name:'Engineering (Modules)',
+      sub:'M01–M08 business logic',
+      icon:`<svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 3v18"/></svg>`,
+      tasks:[
+        {id:'E1', label:'M01 Onboarding (KYC, AML, Video)', tag:'M01', start:'2026-08', end:'2026-12', critical:true,
+         desc:'Video KYC, Aadhaar/PAN/Udyam/DIN verification, AML screening, Master Agreement e-sign.',
+         deliverables:['Onboarding portal','State machine implemented','Vendor integrations live'],
+         deps:['I1','I3']},
+        {id:'E2', label:'M02 Invoice/FU Upload + Buyer Confirmation', tag:'M02', start:'2026-09', end:'2027-01', critical:true,
+         desc:'OCR pipeline, FU state machine through buyer confirmation. GSTN/MonetaGo mocked initially.',
+         deliverables:['Textract OCR','FU lifecycle','Buyer confirmation portal','Bulk upload'],
+         deps:['I2','E1']},
+        {id:'E3', label:'M03 Auction & Bidding Engine + NCGTC', tag:'M03', start:'2026-11', end:'2027-04', critical:true,
+         desc:'WebSocket bidding with anonymised display. Guarantee check integrated in flow.',
+         deliverables:['WebSocket infra','Matching engine','Anonymised display','NCGTC check'],
+         deps:['E2','I4']},
+        {id:'E4', label:'M04 Settlement Module (NACH cycles)', tag:'M04', start:'2026-12', end:'2027-04', critical:true,
+         desc:'NACH credit/debit cycles, T+2 disbursement, insurance NACH, non-financed FU NACH.',
+         deliverables:['NACH files','Sponsor bank H2H','Default reporting'],
+         deps:['E3']},
+        {id:'E5', label:'M05 CERSAI Filing service', tag:'M05', start:'2027-01', end:'2027-04', critical:true,
+         desc:'Auto-filing on settlement, retry queue with backoff, exception alerting.',
+         deliverables:['CERSAI service','Retry queue','Alerting'],
+         deps:['E4']},
+        {id:'E6', label:'M06 Surveillance & MIS (Flink + ML)', tag:'M06', start:'2027-02', end:'2027-07', critical:true,
+         desc:'Apache Flink stream processing, ML anomaly detection, role-specific MIS dashboards.',
+         deliverables:['Flink cluster','ML models','4 dashboards','Officer workflow'],
+         deps:['I4','E2']},
+        {id:'E7', label:'RES.B RBI Reporting auto-generators', tag:'RES.B', start:'2027-04', end:'2027-07', critical:true,
+         desc:'Monthly volume, default, quarterly disputes, annual returns. SFTP submission to RBI DPSS.',
+         deliverables:['Return generators','RBI DPSS SFTP'],
+         deps:['E6']},
+        {id:'E8', label:'Grievance + Default 3-tier module', tag:'M07-sub', start:'2027-03', end:'2027-06', critical:false,
+         desc:'3-tier ticketing with SLA enforcement, banker default reporting, RBI-Sachet hook.',
+         deliverables:['Ticketing portal','SLA engine','Sachet integration'],
+         deps:['E1']},
+        {id:'E9', label:'M08 External Integration Hub formalised', tag:'M08', start:'2027-01', end:'2027-04', critical:true,
+         desc:'Consolidate all external adapters with circuit breakers, retry policies, partner health.',
+         deliverables:['Circuit breakers','Partner health dashboard','All adapters under M08'],
+         deps:['X2','X4','X7']},
+        {id:'E10', label:'Secondary market + insurance flows', tag:'M03', start:'2027-08', end:'2027-12', critical:false,
+         desc:'Financier-to-financier FU transfer with re-CERSAI on transfer. Insurance partner onboarding.',
+         deliverables:['Secondary market','Insurance NACH','Re-CERSAI on transfer'],
+         deps:['E3','E5']},
+      ]
+    },
+    {
+      id:'t-infra', name:'Platform / Infra',
+      sub:'Gateway · IAM · DB · cache · event bus · DR',
+      icon:`<svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>`,
+      tasks:[
+        {id:'I1', label:'Cloud accounts + VPC baseline', tag:'INFRA', start:'2026-06', end:'2026-08', critical:true,
+         desc:'AWS Mumbai + DR region. VPC architecture, KMS, IAM baseline, CI/CD scaffolding.',
+         deliverables:['AWS accounts','VPC + KMS','CI/CD pipelines'],
+         deps:[]},
+        {id:'I2', label:'M07 Primary Database (PostgreSQL)', tag:'M07', start:'2026-08', end:'2026-11', critical:true,
+         desc:'PostgreSQL cluster, AES-256 at rest, schema, partitioning, audit log.',
+         deliverables:['PG cluster','Schema','Partitioning','Audit log'],
+         deps:['I1']},
+        {id:'I3', label:'L1 API Gateway + IAM (Keycloak)', tag:'L1', start:'2026-08', end:'2026-11', critical:true,
+         desc:'Spring Cloud Gateway with OAuth2/OIDC. Keycloak 4-role RBAC + MFA.',
+         deliverables:['Gateway routing','Keycloak','MFA live','mTLS mesh'],
+         deps:['I1']},
+        {id:'I4', label:'L3 Kafka + Redis production', tag:'L3', start:'2026-11', end:'2027-02', critical:false,
+         desc:'Kafka cluster (3-broker) + Redis Sentinel HA. Event-driven choreography.',
+         deliverables:['Kafka cluster','Redis HA','Schema registry'],
+         deps:['I1']},
+        {id:'I5', label:'WAF + DDoS mitigation', tag:'L1.A', start:'2026-10', end:'2027-01', critical:false,
+         desc:'CloudFront WAF rules, DDoS protection, geo-fencing, bot scoring.',
+         deliverables:['WAF rules','DDoS protection live'],
+         deps:['I1']},
+        {id:'I6', label:'Observability stack (Prometheus/ELK)', tag:'INFRA', start:'2026-07', end:'2026-10', critical:false,
+         desc:'Prometheus + Grafana metrics, ELK log aggregation, alerting baseline.',
+         deliverables:['Prometheus + Grafana','ELK live','Alert rules'],
+         deps:['I1']},
+        {id:'I7', label:'MonetaGo Fabric peer node', tag:'L3.D', start:'2026-10', end:'2026-12', critical:false,
+         desc:'Hyperledger Fabric peer node provisioned and joined to MonetaGo channel.',
+         deliverables:['Peer node live','Channel joined'],
+         deps:['X5','I1']},
+        {id:'I8', label:'BCP/DR site provisioning', tag:'RES.A', start:'2027-02', end:'2027-05', critical:true,
+         desc:'Geographically separate DR site with synchronous DB replication, app-tier active-passive.',
+         deliverables:['DR region active','Sync replication','RPO < 1h'],
+         deps:['I2']},
+        {id:'I9', label:'Full DR failover drill', tag:'RES.A', start:'2027-06', end:'2027-07', critical:true,
+         desc:'First mandatory full failover drill per G18 §22(c). RTO < 4h validated.',
+         deliverables:['Drill report','RPO/RTO certified'],
+         deps:['I8']},
+      ]
+    },
+    {
+      id:'t-sec', name:'Security & Audit',
+      sub:'IS audit · VAPT · SOC',
+      icon:`<svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5 3.5 8.5 8 10 4.5-1.5 8-5 8-10V6l-8-4z"/></svg>`,
+      tasks:[
+        {id:'S1', label:'IS audit gap assessment', tag:'SEC', start:'2026-10', end:'2026-12', critical:false,
+         desc:'Engage CERT-In empanelled auditor for initial gap assessment against IS audit framework.',
+         deliverables:['Gap report','Remediation plan'],
+         deps:['I3']},
+        {id:'S2', label:'VAPT round 1 + remediation', tag:'SEC', start:'2026-12', end:'2027-02', critical:false,
+         desc:'First vulnerability assessment + penetration test on alpha platform. Triage and fix high/critical.',
+         deliverables:['VAPT report','High/critical issues closed'],
+         deps:['E1','E2','I3']},
+        {id:'S3', label:'Full IS audit (CERT-In)', tag:'SEC', start:'2027-05', end:'2027-07', critical:true,
+         desc:'Formal annual IS audit by CERT-In empanelled auditor. Required for RBI authorisation.',
+         deliverables:['IS audit certificate','Findings remediated'],
+         deps:['S1','E5','I8']},
+        {id:'S4', label:'Final pentest (external + internal)', tag:'SEC', start:'2027-07', end:'2027-08', critical:true,
+         desc:'Final penetration test before production. Internet-facing + internal lateral movement.',
+         deliverables:['Pentest report','No high/critical open'],
+         deps:['S3']},
+        {id:'S5', label:'24×7 SOC operational', tag:'OPS', start:'2027-04', end:'2027-07', critical:false,
+         desc:'SOC live with CERT-In empanelled MSSP. Incident response runbooks tested.',
+         deliverables:['SOC 24×7 live','Incident runbooks','First MTTR baseline'],
+         deps:['I6','X11']},
+      ]
+    },
+    {
+      id:'t-ops', name:'Operations / Pilot',
+      sub:'Hiring · pilot · scale',
+      icon:`<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/></svg>`,
+      tasks:[
+        {id:'O1', label:'Hiring ramp (10 → 60 engineers)', tag:'HR', start:'2026-06', end:'2027-07', critical:false,
+         desc:'Continuous hiring. CTO/CISO Day 1 → 25 by Dec 2026 → 45 by Apr 2027 → 60 peak Jul 2027.',
+         deliverables:['Org chart filled','60 engineers + ops staff'],
+         deps:[]},
+        {id:'O2', label:'Friendly pilot (5–10 participants)', tag:'OPS', start:'2027-07', end:'2027-08', critical:false,
+         desc:'Onboard small friendly cohort: 3–5 MSME sellers, 2–3 buyers, 2 financiers. Sandbox-to-prod migration.',
+         deliverables:['10 participants live','First test transactions','Feedback log'],
+         deps:['S3','S4','I9']},
+        {id:'O3', label:'Pilot expansion (50–100 participants)', tag:'OPS', start:'2027-08', end:'2027-10', critical:true,
+         desc:'Expand to 50–100 participants. Real money in controlled volumes. Daily ops cadence.',
+         deliverables:['100 participants','Real settlements','Operations dashboard'],
+         deps:['O2','E7']},
+        {id:'O4', label:'Bug fix + perf tuning from pilot', tag:'ENG', start:'2027-08', end:'2027-10', critical:false,
+         desc:'Triage and fix real-world issues. Performance tuning for projected scale.',
+         deliverables:['P0/P1 bugs closed','Latency targets met'],
+         deps:['O2']},
+        {id:'O5', label:'Public launch onboarding', tag:'OPS', start:'2027-11', end:'2027-12', critical:true,
+         desc:'Open onboarding to all eligible MSMEs/buyers/financiers. Marketing live.',
+         deliverables:['Self-serve onboarding','Marketing site','BD pipeline'],
+         deps:['O3']},
+      ]
+    }
+  ];
+
+  // Build a flat task index
+  const TASK_INDEX = {};
+  TRACKS.forEach(track => {
+    track.tasks.forEach(t => {
+      TASK_INDEX[t.id] = { ...t, trackId: track.id, trackName: track.name };
+    });
+  });
+
+  // ============================================================
+  // RENDER
+  // ============================================================
+  function buildMonthHeader() {
+    let html = '<div class="month-header">';
+    html += '<div class="label-cell"><div class="ttl">Workstream Track</div></div>';
+    MONTHS.forEach((mo) => {
+      const isYearBoundary = mo.m === 'Jan';
+      const isQuarterBoundary = ['Jan','Apr','Jul','Oct'].includes(mo.m);
+      const cls = isYearBoundary ? 'year-boundary' : (isQuarterBoundary ? 'q-boundary' : '');
+      html += `<div class="month-cell ${cls}">${mo.m}<span class="yr">'${mo.y}</span></div>`;
+    });
+    html += '</div>';
+    return html;
+  }
+
+  function buildPhaseRibbons() {
+    let html = '<div class="phase-ribbons">';
+    html += '<div class="label-cell">Phase reference</div>';
+    html += '<div class="phase-ribbons-lane">';
+    PHASES.forEach(p => {
+      const startIdx = mIdx(p.start);
+      const endIdx = mIdx(p.end);
+      const leftPx = `calc(${startIdx} * var(--month-width) + 3px)`;
+      const widthPx = `calc(${endIdx - startIdx + 1} * var(--month-width) - 6px)`;
+      html += `<div class="phase-ribbon" style="left:${leftPx}; width:${widthPx}">`;
+      html += `<span class="num">${p.num}</span>`;
+      html += `<span>${p.name}</span>`;
+      html += `</div>`;
+    });
+    html += '</div></div>';
+    return html;
+  }
+
+  function buildMilestoneRow() {
+    let html = '<div class="ms-row">';
+    html += '<div class="label-cell">';
+    html += '<span class="module-tag">★ GATES</span>';
+    html += '<span class="lbl">Milestones</span>';
+    html += '</div>';
+    html += '<div class="ms-lane">';
+    MILESTONES.forEach((ms, idx) => {
+      const i = mIdx(ms.date);
+      const leftPx = `calc(${i + 1} * var(--month-width) - var(--month-width) / 2)`;
+      const top = (idx % 2 === 0) ? '6px' : '34px';
+      html += `<div class="milestone" data-ms-id="${ms.id}" style="left:${leftPx}"></div>`;
+      html += `<div class="milestone-label" data-ms-id="${ms.id}" style="left:${leftPx}; top:${top}">${ms.label}</div>`;
+    });
+    html += `<div class="today-line" style="left:0"></div>`;
+    html += '</div></div>';
+    return html;
+  }
+
+  function buildTrack(track) {
+    let html = `<section class="track ${track.id}">`;
+    html += `<div class="track-header">`;
+    html += `<div class="track-title">`;
+    html += `<span class="track-icon">${track.icon}</span>`;
+    html += `<span class="track-name">${track.name}<span class="sub">${track.sub}</span></span>`;
+    html += `</div>`;
+    html += `<div class="track-count">${track.tasks.length} workstreams</div>`;
+    html += `</div>`;
+
+    track.tasks.forEach((t) => {
+      const startIdx = mIdx(t.start);
+      const endIdx = mIdx(t.end);
+      const leftPx = `calc(${startIdx} * var(--month-width) + 3px)`;
+      const widthPx = `calc(${endIdx - startIdx + 1} * var(--month-width) - 6px)`;
+      const tagCls = t.critical ? 'critical' : '';
+      html += `<div class="task-row" data-task-id="${t.id}" data-critical="${t.critical}">`;
+      html += `<div class="task-label">`;
+      html += `<span class="module-tag ${tagCls}">${t.tag}</span>`;
+      html += `<span>${t.label}</span>`;
+      html += `</div>`;
+      html += `<div class="task-lane">`;
+      html += `<div class="bar ${track.id} ${t.critical ? 'critical' : ''}" `
+            + `data-task-id="${t.id}" `
+            + `style="left:${leftPx}; width:${widthPx}">`
+            + `${t.id} · ${t.label}`
+            + `</div>`;
+      html += `</div>`;
+      html += `</div>`;
+    });
+
+    html += `</section>`;
+    return html;
+  }
+
+  function render() {
+    const inner = document.getElementById('ganttInner');
+    let html = '';
+    html += buildMonthHeader();
+    html += buildPhaseRibbons();
+    html += buildMilestoneRow();
+    TRACKS.forEach(t => { html += buildTrack(t); });
+    inner.innerHTML = html;
+    wireInteractions();
+  }
+
+  // ============================================================
+  // DEPENDENCY ARROWS
+  // ============================================================
+  function isAncestor(candidateAncestor, taskId) {
+    const t = TASK_INDEX[taskId];
+    if (!t || !t.deps) return false;
+    if (t.deps.includes(candidateAncestor)) return true;
+    return t.deps.some(d => isAncestor(candidateAncestor, d));
+  }
+
+  function isDescendant(candidateDescendant, taskId) {
+    const cd = TASK_INDEX[candidateDescendant];
+    if (!cd || !cd.deps) return false;
+    if (cd.deps.includes(taskId)) return true;
+    return cd.deps.some(d => isDescendant(d, taskId));
+  }
+
+  function getDependents(taskId) {
+    return Object.values(TASK_INDEX)
+      .filter(t => t.deps && t.deps.includes(taskId))
+      .map(t => t.id);
+  }
+
+  // ============================================================
+  // INTERACTIONS
+  // ============================================================
+  function wireInteractions() {
+    document.querySelectorAll('.bar').forEach(bar => {
+      bar.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showTaskDetail(bar.dataset.taskId);
+      });
+    });
+    document.querySelectorAll('.milestone, .milestone-label').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.dataset.msId;
+        const ms = MILESTONES.find(m => m.id === id);
+        if (ms) showMilestoneDetail(ms);
+      });
+    });
+  }
+
+  function showTaskDetail(taskId) {
+    const t = TASK_INDEX[taskId];
+    if (!t) return;
+
+    document.body.classList.add('flow-active');
+    document.querySelectorAll('.bar').forEach(b => b.classList.remove('flow-on','flow-source'));
+    const sourceBar = document.querySelector(`.bar[data-task-id="${taskId}"]`);
+    if (sourceBar) sourceBar.classList.add('flow-source');
+
+    function markUpstream(id) {
+      const task = TASK_INDEX[id];
+      if (!task) return;
+      (task.deps || []).forEach(depId => {
+        const b = document.querySelector(`.bar[data-task-id="${depId}"]`);
+        if (b) b.classList.add('flow-on');
+        markUpstream(depId);
+      });
+    }
+    markUpstream(taskId);
+
+    function markDownstream(id) {
+      getDependents(id).forEach(depId => {
+        const b = document.querySelector(`.bar[data-task-id="${depId}"]`);
+        if (b) b.classList.add('flow-on');
+        markDownstream(depId);
+      });
+    }
+    markDownstream(taskId);
+
+    const depChips = (t.deps || []).map(depId => {
+      const dt = TASK_INDEX[depId];
+      const cls = dt && dt.critical ? 'crit' : '';
+      return `<span class="dep-chip ${cls}" data-jump="${depId}">${depId} · ${dt ? dt.label : depId}</span>`;
+    }).join('') || '<span style="color:var(--ink-mute); font-size:12px; font-style:italic">No prerequisites — can start Day 1</span>';
+
+    const dependents = getDependents(taskId);
+    const depnChips = dependents.map(d => {
+      const dt = TASK_INDEX[d];
+      const cls = dt && dt.critical ? 'crit' : '';
+      return `<span class="dep-chip ${cls}" data-jump="${d}">${d} · ${dt ? dt.label : d}</span>`;
+    }).join('') || '<span style="color:var(--ink-mute); font-size:12px; font-style:italic">Nothing depends on this</span>';
+
+    const trackShort = t.trackName.split(' / ')[0].split(' (')[0];
+    const panel = document.getElementById('detailPanel');
+    panel.innerHTML = `
+      <div class="detail-head">
+        <div>
+          <h3 class="detail-title">${t.id} · ${t.label}</h3>
+          <div class="detail-meta">${t.trackName} · ${t.tag} · ${formatYM(t.start)} → ${formatYM(t.end)}</div>
+        </div>
+        <div class="detail-badges">
+          <span class="badge track-${t.trackId}">${trackShort}</span>
+          <span class="badge ${t.critical ? 'crit' : 'std'}">${t.critical ? '● Critical Path' : '● Standard'}</span>
+        </div>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-section">
+          <h4>Scope</h4>
+          <p style="font-size:13px; color:var(--ink); line-height:1.55; margin:0 0 14px">${t.desc}</p>
+          <h4>Deliverables</h4>
+          <ul>${(t.deliverables || []).map(d => `<li>${d}</li>`).join('')}</ul>
+        </div>
+        <div class="detail-section">
+          <h4>Depends on (prerequisites)</h4>
+          <div style="margin-bottom:14px; display:flex; flex-wrap:wrap; gap:4px">${depChips}</div>
+          <h4>Blocks (dependents)</h4>
+          <div style="display:flex; flex-wrap:wrap; gap:4px">${depnChips}</div>
+        </div>
+      </div>
+    `;
+
+    panel.querySelectorAll('.dep-chip[data-jump]').forEach(chip => {
+      chip.addEventListener('click', () => {
+        const id = chip.dataset.jump;
+        const b = document.querySelector(`.bar[data-task-id="${id}"]`);
+        if (b) b.scrollIntoView({behavior:'smooth', block:'center', inline:'center'});
+        showTaskDetail(id);
+      });
+    });
+
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function showMilestoneDetail(ms) {
+    document.body.classList.remove('flow-active');
+    document.querySelectorAll('.bar').forEach(b => b.classList.remove('flow-on','flow-source'));
+
+    const panel = document.getElementById('detailPanel');
+    panel.innerHTML = `
+      <div class="detail-head">
+        <div>
+          <h3 class="detail-title">◆ ${ms.label}</h3>
+          <div class="detail-meta">Milestone · ${formatYM(ms.date)}</div>
+        </div>
+        <div class="detail-badges">
+          <span class="badge crit">● Gate</span>
+        </div>
+      </div>
+      <div class="detail-section">
+        <p style="font-size:13.5px; color:var(--ink); line-height:1.6; margin:0">${ms.desc}</p>
+      </div>
+    `;
+    panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  function formatYM(ym) {
+    const [y, m] = ym.split('-').map(Number);
+    const monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    return `${monthNames[m-1]} ${y}`;
+  }
+
+  // Toolbar wiring
+  document.querySelectorAll('[data-filter]').forEach(b => {
+    b.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter]').forEach(x => x.classList.remove('active'));
+      b.classList.add('active');
+      const f = b.dataset.filter;
+      document.querySelectorAll('.task-row').forEach(row => {
+        if (f === 'all') row.style.display = '';
+        else if (f === 'critical') row.style.display = row.dataset.critical === 'true' ? '' : 'none';
+      });
+    });
+  });
+
+  document.getElementById('critToggle').addEventListener('click', (e) => {
+    document.body.classList.toggle('show-critical');
+    e.target.classList.toggle('active');
+  });
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    document.body.classList.remove('show-critical', 'flow-active');
+    document.querySelectorAll('.bar').forEach(b => b.classList.remove('flow-on','flow-source'));
+    document.getElementById('critToggle').classList.remove('active');
+    document.querySelectorAll('[data-filter]').forEach(x => x.classList.remove('active'));
+    document.querySelector('[data-filter="all"]').classList.add('active');
+    document.querySelectorAll('.task-row').forEach(row => row.style.display = '');
+    document.getElementById('detailPanel').innerHTML = `
+      <div class="detail-empty">
+        <strong>Click any workstream bar</strong> to see scope, deliverables, what it depends on, and what depends on it. The dependency chain is highlighted on the Gantt by dimming unrelated bars.
+      </div>
+    `;
+  });
+
+  render();
+</script>
+</body>
+</html>
